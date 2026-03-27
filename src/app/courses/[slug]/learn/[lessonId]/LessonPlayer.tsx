@@ -64,11 +64,13 @@ export default function LessonPlayer({
   // Convert YouTube/Vimeo URL to embed
   const getEmbedUrl = (url: string) => {
     if (!url) return "";
-    // Handle youtube.com/watch?v=, youtu.be/, youtube.com/embed/, youtube.com/shorts/
     const ytMatch = url.match(
       /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&\s?]+)/
     );
-    if (ytMatch) return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}`;
+    if (ytMatch) {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      return `https://www.youtube.com/embed/${ytMatch[1]}?origin=${encodeURIComponent(origin)}&rel=0`;
+    }
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
     if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
     return url;
