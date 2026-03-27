@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── USERS ───────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("STUDENT") // STUDENT | INSTRUCTOR | ADMIN
+  avatar       String?
+  bio          String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  courses     Course[]
+  enrollments Enrollment[]
+  progress    Progress[]
+}
+
+// ─── CATEGORIES ──────────────────────────────────────
+
+model Category {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  slug    String   @unique
+  courses Course[]
+}
+
+// ─── COURSES ─────────────────────────────────────────
+
+model Course {
+  id            String   @id @default(cuid())
+  title         String
+  slug          String   @unique
+  description   String
+  price         Float
+  thumbnail     String?
+  status        String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | PUBLISHED | REJECTED
+  rejectionNote String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  instructorId String
+  instructor   User     @relation(fields: [instructorId], references: [id])
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id])
+
+  sections    Section[]
+  enrollments Enrollment[]
+}
+
+// ─── SECTIONS ────────────────────────────────────────
+
+model Section {
+  id       String   @id @default(cuid())
+  title    String
+  order    Int
+  courseId  String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+}
+
+// ─── LESSONS ─────────────────────────────────────────
+
+model Lesson {
+  id        String   @id @default(cuid())
+  title     String
+  videoUrl  String
+  duration  Int      @default(0) // seconds
+  order     Int
+  isFree    Boolean  @default(false)
+  sectionId String
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  progress  Progress[]
+}
+
+// ─── ENROLLMENTS ─────────────────────────────────────
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId   String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+// ─── PROGRESS ────────────────────────────────────────
+
+model Progress {
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+}
