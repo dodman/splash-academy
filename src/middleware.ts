@@ -17,6 +17,8 @@ export default auth((req) => {
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/courses") ||
     pathname.startsWith("/api/categories") ||
+    pathname.startsWith("/api/signup") ||
+    pathname.startsWith("/api/webhooks") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
   ) {
