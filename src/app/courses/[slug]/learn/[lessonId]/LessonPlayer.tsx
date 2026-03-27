@@ -93,6 +93,8 @@ export default function LessonPlayer({
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
               />
             )
           ) : (

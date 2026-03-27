@@ -51,6 +51,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Delete progress records for all lessons in this section first
+  await db.progress.deleteMany({
+    where: { lesson: { sectionId } },
+  });
   await db.section.delete({ where: { id: sectionId } });
 
   return NextResponse.json({ success: true });
