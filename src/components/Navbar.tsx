@@ -2,12 +2,46 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Navbar() {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingCourses, setPendingCourses] = useState<
+    { id: string; title: string; instructor: { name: string }; createdAt: string }[]
+  >([]);
+  const notifRef = useRef<HTMLDivElement>(null);
   const user = session?.user;
+
+  // Fetch admin notifications
+  useEffect(() => {
+    if (user?.role !== "ADMIN") return;
+    const fetchNotifs = () => {
+      fetch("/api/admin/notifications")
+        .then((r) => r.json())
+        .then((data) => {
+          setPendingCount(data.pendingCount || 0);
+          setPendingCourses(data.pendingCourses || []);
+        })
+        .catch(() => {});
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 30000); // poll every 30s
+    return () => clearInterval(interval);
+  }, [user?.role]);
+
+  // Close notification dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const getDashboardLink = () => {
     if (!user) return "/login";
@@ -47,6 +81,68 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
+                {user.role === "ADMIN" && (
+                  <div ref={notifRef} className="relative ml-2">
+                    <button
+                      onClick={() => setNotifOpen(!notifOpen)}
+                      className="relative p-2 rounded-lg hover:bg-muted transition"
+                    >
+                      <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      {pendingCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-danger text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                          {pendingCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {notifOpen && (
+                      <div className="absolute right-0 mt-2 w-80 bg-white border border-border rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                        <div className="px-4 py-3 border-b border-border bg-muted/50">
+                          <p className="font-semibold text-sm">Notifications</p>
+                        </div>
+                        {pendingCourses.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                            No pending reviews
+                          </div>
+                        ) : (
+                          <div className="max-h-64 overflow-y-auto">
+                            {pendingCourses.map((course) => (
+                              <a
+                                key={course.id}
+                                href="/admin/courses"
+                                className="block px-4 py-3 hover:bg-muted/50 transition border-b border-border last:border-0"
+                                onClick={() => setNotifOpen(false)}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-8 h-8 bg-warning/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg className="w-4 h-4 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium leading-snug">{course.title}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      by {course.instructor.name} — awaiting review
+                                    </p>
+                                  </div>
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        <a
+                          href="/admin/courses"
+                          className="block px-4 py-2.5 text-center text-sm text-primary font-medium bg-muted/30 hover:bg-muted transition border-t border-border"
+                          onClick={() => setNotifOpen(false)}
+                        >
+                          View all courses
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center gap-3 ml-3 pl-3 border-l border-border">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
@@ -134,6 +230,20 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
+                {user.role === "ADMIN" && pendingCount > 0 && (
+                  <a
+                    href="/admin/courses"
+                    className="flex items-center gap-3 px-3 py-2.5 bg-warning/10 rounded-lg"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <span className="text-sm font-medium text-warning">
+                      {pendingCount} course{pendingCount !== 1 ? "s" : ""} awaiting review
+                    </span>
+                  </a>
+                )}
                 <div className="flex items-center gap-2 px-3 py-2 mt-2 border-t border-border pt-3">
                   <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                     <span className="text-xs font-semibold text-primary">
