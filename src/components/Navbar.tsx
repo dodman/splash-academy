@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 
@@ -59,10 +60,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:shadow-lg group-hover:shadow-primary/25 transition-all duration-200">
-              <span className="text-white font-bold text-sm">S</span>
-            </div>
+          <Link href="/" className="flex items-center gap-2 group">
+            <Image
+              src="/logo.png"
+              alt="Splash Academy"
+              width={40}
+              height={40}
+              className="rounded-full group-hover:shadow-lg group-hover:shadow-primary/25 transition-all duration-200"
+            />
             <span className="text-xl font-bold text-foreground">
               Splash Academy
             </span>
