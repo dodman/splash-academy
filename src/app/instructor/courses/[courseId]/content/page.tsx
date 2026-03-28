@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import VideoUpload from "@/components/VideoUpload";
+// Video URL is now a direct input field (no separate component needed)
 
 interface Lesson {
   id: string;
@@ -246,11 +246,12 @@ export default function CourseContentPage() {
                   onChange={(e) => setLessonTitle(e.target.value)}
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
-                <VideoUpload
-                  onUploadComplete={(url, duration) => {
-                    setLessonVideoUrl(url);
-                    if (duration > 0) setLessonDuration(String(duration));
-                  }}
+                <input
+                  type="text"
+                  placeholder="Video URL (YouTube, Vimeo, or direct link)"
+                  value={lessonVideoUrl}
+                  onChange={(e) => setLessonVideoUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
                 <div className="flex gap-3">
                   <input
