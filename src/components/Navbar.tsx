@@ -12,6 +12,9 @@ export default function Navbar() {
   const [pendingCourses, setPendingCourses] = useState<
     { id: string; title: string; instructor: { name: string }; createdAt: string }[]
   >([]);
+  const [pendingUsers, setPendingUsers] = useState<
+    { id: string; name: string; email: string; role: string; createdAt: string }[]
+  >([]);
   const notifRef = useRef<HTMLDivElement>(null);
   const user = session?.user;
 
@@ -24,6 +27,7 @@ export default function Navbar() {
         .then((data) => {
           setPendingCount(data.pendingCount || 0);
           setPendingCourses(data.pendingCourses || []);
+          setPendingUsers(data.pendingUsers || []);
         })
         .catch(() => {});
     };
@@ -102,12 +106,34 @@ export default function Navbar() {
                         <div className="px-4 py-3 border-b border-border bg-muted/50">
                           <p className="font-semibold text-sm">Notifications</p>
                         </div>
-                        {pendingCourses.length === 0 ? (
+                        {pendingCourses.length === 0 && pendingUsers.length === 0 ? (
                           <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                            No pending reviews
+                            No pending items
                           </div>
                         ) : (
-                          <div className="max-h-64 overflow-y-auto">
+                          <div className="max-h-72 overflow-y-auto">
+                            {pendingUsers.map((u) => (
+                              <a
+                                key={u.id}
+                                href="/admin/users"
+                                className="block px-4 py-3 hover:bg-muted/50 transition border-b border-border last:border-0"
+                                onClick={() => setNotifOpen(false)}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium leading-snug">{u.name}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      New {u.role.toLowerCase()} — awaiting approval
+                                    </p>
+                                  </div>
+                                </div>
+                              </a>
+                            ))}
                             {pendingCourses.map((course) => (
                               <a
                                 key={course.id}
@@ -132,13 +158,22 @@ export default function Navbar() {
                             ))}
                           </div>
                         )}
-                        <a
-                          href="/admin/courses"
-                          className="block px-4 py-2.5 text-center text-sm text-primary font-medium bg-muted/30 hover:bg-muted transition border-t border-border"
-                          onClick={() => setNotifOpen(false)}
-                        >
-                          View all courses
-                        </a>
+                        <div className="flex border-t border-border">
+                          <a
+                            href="/admin/courses"
+                            className="flex-1 px-4 py-2.5 text-center text-sm text-primary font-medium bg-muted/30 hover:bg-muted transition border-r border-border"
+                            onClick={() => setNotifOpen(false)}
+                          >
+                            Courses
+                          </a>
+                          <a
+                            href="/admin/users"
+                            className="flex-1 px-4 py-2.5 text-center text-sm text-primary font-medium bg-muted/30 hover:bg-muted transition"
+                            onClick={() => setNotifOpen(false)}
+                          >
+                            Users
+                          </a>
+                        </div>
                       </div>
                     )}
                   </div>

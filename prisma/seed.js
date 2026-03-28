@@ -12,14 +12,13 @@ function cuid() {
 
 // Seed categories
 const categories = [
-  { name: "Web Development", slug: "web-development" },
-  { name: "Mobile Development", slug: "mobile-development" },
-  { name: "Data Science", slug: "data-science" },
-  { name: "Design", slug: "design" },
-  { name: "Business", slug: "business" },
-  { name: "Marketing", slug: "marketing" },
-  { name: "Photography", slug: "photography" },
-  { name: "Music", slug: "music" },
+  { name: "School of Business", slug: "school-of-business" },
+  { name: "School of Humanities", slug: "school-of-humanities" },
+  { name: "School of Education", slug: "school-of-education" },
+  { name: "School of Natural Sciences", slug: "school-of-natural-sciences" },
+  { name: "School of Law", slug: "school-of-law" },
+  { name: "School of Agricultural Sciences", slug: "school-of-agricultural-sciences" },
+  { name: "School of Veterinary Medicine", slug: "school-of-veterinary-medicine" },
 ];
 
 const insertCat = db.prepare(

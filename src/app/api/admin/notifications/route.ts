@@ -8,19 +8,33 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const pendingCourses = await db.course.findMany({
-    where: { status: "SUBMITTED" },
-    select: {
-      id: true,
-      title: true,
-      createdAt: true,
-      instructor: { select: { name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const [pendingCourses, pendingUsers] = await Promise.all([
+    db.course.findMany({
+      where: { status: "SUBMITTED" },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        instructor: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.user.findMany({
+      where: { approved: false },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   return NextResponse.json({
-    pendingCount: pendingCourses.length,
+    pendingCount: pendingCourses.length + pendingUsers.length,
     pendingCourses,
+    pendingUsers,
   });
 }
