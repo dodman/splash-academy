@@ -11,10 +11,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [unverified, setUnverified] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendVerifyUrl, setResendVerifyUrl] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setUnverified(false);
+    setResendMessage("");
+    setResendVerifyUrl(null);
     setLoading(true);
 
     const result = await signIn("credentials", {
@@ -26,12 +33,38 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result?.error) {
+      if (result.error.includes("EMAIL_NOT_VERIFIED")) {
+        setUnverified(true);
+        setError("Please verify your email before logging in.");
+        return;
+      }
       setError("Invalid email or password");
       return;
     }
 
     router.push("/");
     router.refresh();
+  };
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    setResendMessage("");
+    setResendVerifyUrl(null);
+
+    try {
+      const res = await fetch("/api/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setResendMessage(data.message || "Verification email sent!");
+      if (data.verifyUrl) setResendVerifyUrl(data.verifyUrl);
+    } catch {
+      setResendMessage("Failed to resend. Please try again.");
+    }
+
+    setResending(false);
   };
 
   return (
@@ -48,6 +81,32 @@ export default function LoginPage() {
           {error && (
             <div className="bg-danger/10 text-danger text-sm px-4 py-3 rounded-lg">
               {error}
+              {unverified && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resending}
+                    className="text-primary hover:underline font-medium text-sm"
+                  >
+                    {resending ? "Sending..." : "Resend verification email"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {resendMessage && (
+            <div className="bg-success/10 text-success text-sm px-4 py-3 rounded-lg">
+              {resendMessage}
+              {resendVerifyUrl && (
+                <div className="mt-2 p-2 bg-blue-50 rounded">
+                  <p className="text-xs text-blue-600 font-medium mb-1">Dev mode — click to verify:</p>
+                  <a href={resendVerifyUrl} className="text-xs text-blue-700 underline break-all">
+                    {resendVerifyUrl}
+                  </a>
+                </div>
+              )}
             </div>
           )}
 

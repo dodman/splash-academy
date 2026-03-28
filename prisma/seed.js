@@ -32,21 +32,21 @@ console.log("✓ Categories seeded");
 
 // Seed users
 const insertUser = db.prepare(
-  "INSERT OR IGNORE INTO User (id, name, email, passwordHash, role, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
+  "INSERT OR IGNORE INTO User (id, name, email, passwordHash, role, emailVerified, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 );
 
 const now = new Date().toISOString();
 
 const adminHash = bcrypt.hashSync("admin123", 10);
-insertUser.run(cuid(), "Admin", "admin@splashacademy.com", adminHash, "ADMIN", now, now);
+insertUser.run(cuid(), "Admin", "admin@splashacademy.com", adminHash, "ADMIN", 1, now, now);
 console.log("✓ Admin user created (admin@splashacademy.com / admin123)");
 
 const instructorHash = bcrypt.hashSync("instructor123", 10);
-insertUser.run(cuid(), "Jane Instructor", "instructor@splashacademy.com", instructorHash, "INSTRUCTOR", now, now);
+insertUser.run(cuid(), "Jane Instructor", "instructor@splashacademy.com", instructorHash, "INSTRUCTOR", 1, now, now);
 console.log("✓ Demo instructor created (instructor@splashacademy.com / instructor123)");
 
 const studentHash = bcrypt.hashSync("student123", 10);
-insertUser.run(cuid(), "John Student", "student@splashacademy.com", studentHash, "STUDENT", now, now);
+insertUser.run(cuid(), "John Student", "student@splashacademy.com", studentHash, "STUDENT", 1, now, now);
 console.log("✓ Demo student created (student@splashacademy.com / student123)");
 
 db.close();

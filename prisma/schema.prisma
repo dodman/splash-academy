@@ -18,6 +18,18 @@ model User {
   approved     Boolean  @default(true) // false for new INSTRUCTOR/ADMIN signups until admin approves
   avatar       String?
   bio          String?
+
+  // Email verification
+  emailVerified      Boolean   @default(false)
+  verificationToken  String?   @unique
+  verificationExpires DateTime?
+
+  // Profile fields
+  dateOfBirth String?
+  country     String?
+  city        String?
+  phone       String?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

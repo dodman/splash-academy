@@ -1,6 +1,5 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,13 +13,14 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Create account
     const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,31 +35,26 @@ export default function SignupPage() {
       return;
     }
 
-    // If instructor account is pending approval, show message instead of auto-login
+    // If instructor account is pending approval
     if (data.pendingApproval) {
       setPendingApproval(true);
+      if (data.verifyUrl) setVerifyUrl(data.verifyUrl);
       setLoading(false);
       return;
     }
 
-    // Auto-login after signup (students only)
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
-    setLoading(false);
-
-    if (result?.error) {
-      setError("Account created but login failed. Please log in manually.");
+    // Email verification needed
+    if (data.needsVerification) {
+      setNeedsVerification(true);
+      if (data.verifyUrl) setVerifyUrl(data.verifyUrl);
+      setLoading(false);
       return;
     }
 
-    router.push("/");
-    router.refresh();
+    router.push("/login");
   };
 
+  // Pending approval screen (instructor)
   if (pendingApproval) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-8">
@@ -69,17 +64,61 @@ export default function SignupPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold">Account Pending Approval</h1>
+          <h1 className="text-2xl font-bold">Almost There!</h1>
           <p className="text-muted-foreground mt-3">
-            Your instructor account has been created and is awaiting admin approval.
-            You&apos;ll be able to log in once an administrator reviews and approves your account.
+            Your instructor account has been created. Please verify your email first,
+            then wait for admin approval before you can log in.
           </p>
+          {verifyUrl && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-xs text-blue-600 font-medium mb-1">Dev mode — click to verify:</p>
+              <a href={verifyUrl} className="text-sm text-blue-700 underline break-all">
+                {verifyUrl}
+              </a>
+            </div>
+          )}
           <Link
             href="/login"
             className="inline-block mt-6 text-primary hover:underline"
           >
             Back to Login
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Email verification needed screen (student)
+  if (needsVerification) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold">Check Your Email</h1>
+          <p className="text-muted-foreground mt-3">
+            We&apos;ve sent a verification link to <strong>{email}</strong>.
+            Please click the link to verify your account before logging in.
+          </p>
+          {verifyUrl && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-xs text-blue-600 font-medium mb-1">Dev mode — click to verify:</p>
+              <a href={verifyUrl} className="text-sm text-blue-700 underline break-all">
+                {verifyUrl}
+              </a>
+            </div>
+          )}
+          <div className="mt-6 space-y-2">
+            <Link
+              href="/login"
+              className="inline-block text-primary hover:underline font-medium"
+            >
+              Go to Login
+            </Link>
+          </div>
         </div>
       </div>
     );

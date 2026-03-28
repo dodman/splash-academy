@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 
@@ -61,8 +60,8 @@ export default function Navbar() {
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <Image
-              src="/logo.png"
+            <img
+              src="/logo.jpg"
               alt="Splash Academy"
               width={40}
               height={40}
@@ -184,7 +183,10 @@ export default function Navbar() {
                   </div>
                 )}
                 <div className="flex items-center gap-3 ml-3 pl-3 border-l border-border">
-                  <div className="flex items-center gap-2">
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-2 hover:bg-muted px-2 py-1 rounded-lg transition"
+                  >
                     <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                       <span className="text-xs font-semibold text-primary">
                         {user.name?.[0]?.toUpperCase() || "U"}
@@ -194,7 +196,7 @@ export default function Navbar() {
                       <p className="text-sm font-medium leading-none">{user.name}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{user.role}</p>
                     </div>
-                  </div>
+                  </Link>
                   <button
                     onClick={() => signOut({ callbackUrl: "/" })}
                     className="text-sm text-muted-foreground hover:text-danger px-2 py-1 rounded-lg hover:bg-danger/5 transition-all duration-200"
@@ -284,7 +286,11 @@ export default function Navbar() {
                     </span>
                   </a>
                 )}
-                <div className="flex items-center gap-2 px-3 py-2 mt-2 border-t border-border pt-3">
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 px-3 py-2 mt-2 border-t border-border pt-3 hover:bg-muted rounded-lg transition"
+                  onClick={() => setMenuOpen(false)}
+                >
                   <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                     <span className="text-xs font-semibold text-primary">
                       {user.name?.[0]?.toUpperCase() || "U"}
@@ -292,9 +298,9 @@ export default function Navbar() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.role}</p>
+                    <p className="text-xs text-muted-foreground">{user.role} &middot; View Profile</p>
                   </div>
-                </div>
+                </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="text-left text-danger hover:bg-danger/5 px-3 py-2.5 rounded-lg transition"
