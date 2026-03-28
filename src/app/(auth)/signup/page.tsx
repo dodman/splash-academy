@@ -13,6 +13,7 @@ export default function SignupPage() {
   const [role, setRole] = useState("STUDENT");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +35,14 @@ export default function SignupPage() {
       return;
     }
 
-    // Auto-login after signup
+    // If instructor account is pending approval, show message instead of auto-login
+    if (data.pendingApproval) {
+      setPendingApproval(true);
+      setLoading(false);
+      return;
+    }
+
+    // Auto-login after signup (students only)
     const result = await signIn("credentials", {
       email,
       password,
@@ -51,6 +59,31 @@ export default function SignupPage() {
     router.push("/");
     router.refresh();
   };
+
+  if (pendingApproval) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md text-center">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold">Account Pending Approval</h1>
+          <p className="text-muted-foreground mt-3">
+            Your instructor account has been created and is awaiting admin approval.
+            You&apos;ll be able to log in once an administrator reviews and approves your account.
+          </p>
+          <Link
+            href="/login"
+            className="inline-block mt-6 text-primary hover:underline"
+          >
+            Back to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-8">
@@ -94,6 +127,12 @@ export default function SignupPage() {
               I want to teach
             </button>
           </div>
+
+          {role === "INSTRUCTOR" && (
+            <div className="bg-yellow-50 text-yellow-800 text-xs px-3 py-2 rounded-lg">
+              Instructor accounts require admin approval before you can start teaching.
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium mb-1">Full Name</label>

@@ -14,8 +14,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Only allow STUDENT or INSTRUCTOR signup
+    // Only allow STUDENT or INSTRUCTOR signup (ADMIN created manually)
     const userRole = role === "INSTRUCTOR" ? "INSTRUCTOR" : "STUDENT";
+
+    // Instructors need admin approval; students are auto-approved
+    const approved = userRole === "STUDENT";
 
     // Check if user already exists
     const existingUser = await db.user.findUnique({ where: { email } });
@@ -29,8 +32,19 @@ export async function POST(req: NextRequest) {
     // Hash password and create user
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await db.user.create({
-      data: { name, email, passwordHash, role: userRole },
+      data: { name, email, passwordHash, role: userRole, approved },
     });
+
+    if (!approved) {
+      return NextResponse.json(
+        {
+          message: "Account created! Your instructor account is pending admin approval. You will be able to log in once approved.",
+          userId: user.id,
+          pendingApproval: true,
+        },
+        { status: 201 }
+      );
+    }
 
     return NextResponse.json(
       { message: "Account created successfully", userId: user.id },

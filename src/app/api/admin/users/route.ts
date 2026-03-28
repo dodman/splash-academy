@@ -14,6 +14,7 @@ export async function GET() {
       name: true,
       email: true,
       role: true,
+      approved: true,
       createdAt: true,
       _count: { select: { courses: true, enrollments: true } },
     },
