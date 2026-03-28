@@ -1,7 +1,17 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import LoggedInHome from "@/components/LoggedInHome";
 
 export default async function HomePage() {
+  const session = await auth();
+
+  // Logged-in users get the tabbed dashboard
+  if (session?.user?.id) {
+    return <LoggedInHome />;
+  }
+
+  // Guests get the landing page
   const courseCount = await db.course.count({
     where: { status: "PUBLISHED" },
   });
@@ -38,7 +48,7 @@ export default async function HomePage() {
                 href="/signup"
                 className="border-2 border-white/30 text-white px-8 py-3.5 rounded-xl font-semibold text-center hover:bg-white/10 hover:border-white/50 transition-all duration-200"
               >
-                Start Teaching
+                Get Started Free
               </Link>
             </div>
           </div>
@@ -76,7 +86,7 @@ export default async function HomePage() {
             {
               step: "1",
               title: "Sign Up",
-              desc: "Create your free account as a student or instructor.",
+              desc: "Create your free account and join the community.",
               icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -144,7 +154,7 @@ export default async function HomePage() {
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
               <Link href="/courses" className="hover:text-foreground transition">Courses</Link>
-              <Link href="/signup" className="hover:text-foreground transition">Teach</Link>
+              <Link href="/signup" className="hover:text-foreground transition">Sign Up</Link>
               <Link href="/login" className="hover:text-foreground transition">Login</Link>
             </div>
             <p className="text-sm text-muted-foreground">

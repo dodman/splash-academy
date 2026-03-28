@@ -8,19 +8,12 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const users = await db.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      approved: true,
-      appliedRole: true,
-      createdAt: true,
-      _count: { select: { courses: true, enrollments: true } },
+  const reports = await db.report.findMany({
+    include: {
+      user: { select: { id: true, name: true, email: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(users);
+  return NextResponse.json(reports);
 }

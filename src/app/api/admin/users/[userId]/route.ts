@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-// PUT /api/admin/users/[userId] — approve/reject user or change role
+// PUT /api/admin/users/[userId] — approve, change role, handle applications
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
@@ -20,25 +20,26 @@ export async function PUT(
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  // Don't let admin modify themselves
   if (userId === session.user.id) {
     return NextResponse.json({ error: "Cannot modify your own account" }, { status: 400 });
   }
 
   const updateData: Record<string, unknown> = {};
 
-  // Handle approval
   if (typeof body.approved === "boolean") {
     updateData.approved = body.approved;
   }
 
-  // Handle role change
   if (body.role && ["STUDENT", "INSTRUCTOR", "ADMIN"].includes(body.role)) {
     updateData.role = body.role;
-    // Auto-approve students
     if (body.role === "STUDENT") {
       updateData.approved = true;
     }
+  }
+
+  // Clear role application
+  if (body.clearApplication) {
+    updateData.appliedRole = null;
   }
 
   const updated = await db.user.update({
@@ -47,7 +48,7 @@ export async function PUT(
   });
 
   return NextResponse.json({
-    message: `User ${updated.approved ? "approved" : "updated"} successfully`,
+    message: "User updated successfully",
     user: { id: updated.id, name: updated.name, role: updated.role, approved: updated.approved },
   });
 }

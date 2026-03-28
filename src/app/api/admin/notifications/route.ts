@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [pendingCourses, pendingUsers] = await Promise.all([
+  const [pendingCourses, pendingUsers, openReports, roleApplications] = await Promise.all([
     db.course.findMany({
       where: { status: "SUBMITTED" },
       select: {
@@ -30,11 +30,15 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
     }),
+    db.report.count({ where: { status: "OPEN" } }),
+    db.user.count({ where: { appliedRole: { not: null } } }),
   ]);
 
   return NextResponse.json({
-    pendingCount: pendingCourses.length + pendingUsers.length,
+    pendingCount: pendingCourses.length + pendingUsers.length + openReports + roleApplications,
     pendingCourses,
     pendingUsers,
+    openReports,
+    roleApplications,
   });
 }

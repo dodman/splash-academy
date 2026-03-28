@@ -22,7 +22,8 @@ export async function GET() {
         country: true,
         city: true,
         phone: true,
-        emailVerified: true,
+        careerGoal: true,
+        appliedRole: true,
         createdAt: true,
       },
     });
@@ -48,7 +49,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, bio, dateOfBirth, country, city, phone, avatar } = body;
+    const { name, bio, dateOfBirth, country, city, phone, avatar, careerGoal } = body;
 
     if (!name || name.trim().length === 0) {
       return NextResponse.json(
@@ -57,7 +58,6 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Validate phone if provided
     if (phone && !/^[+\d\s()-]{0,20}$/.test(phone)) {
       return NextResponse.json(
         { error: "Invalid phone number format" },
@@ -75,6 +75,7 @@ export async function PUT(req: NextRequest) {
         city: city?.trim() || null,
         phone: phone?.trim() || null,
         avatar: avatar?.trim() || null,
+        careerGoal: careerGoal?.trim() || null,
       },
       select: {
         id: true,
@@ -87,7 +88,8 @@ export async function PUT(req: NextRequest) {
         country: true,
         city: true,
         phone: true,
-        emailVerified: true,
+        careerGoal: true,
+        appliedRole: true,
         createdAt: true,
       },
     });

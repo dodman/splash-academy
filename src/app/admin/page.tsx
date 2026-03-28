@@ -7,25 +7,24 @@ export default async function AdminDashboard() {
   const session = await auth();
   if (!session?.user?.id || session.user.role !== "ADMIN") redirect("/");
 
-  const [userCount, courseCount, pendingCourses, enrollmentCount, pendingUsers] =
+  const [userCount, courseCount, pendingCourses, enrollmentCount, pendingUsers, openReports, roleApplications] =
     await Promise.all([
       db.user.count(),
       db.course.count(),
       db.course.count({ where: { status: "SUBMITTED" } }),
       db.enrollment.count(),
       db.user.count({ where: { approved: false } }),
+      db.report.count({ where: { status: "OPEN" } }),
+      db.user.count({ where: { appliedRole: { not: null } } }),
     ]);
 
-  const totalNotifications = pendingCourses + pendingUsers;
+  const totalNotifications = pendingCourses + pendingUsers + openReports + roleApplications;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-      <p className="text-muted-foreground mt-1">
-        Manage users, courses, and content
-      </p>
+      <p className="text-muted-foreground mt-1">Manage users, courses, and content</p>
 
-      {/* Notification Banner */}
       {totalNotifications > 0 && (
         <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
@@ -38,18 +37,16 @@ export default async function AdminDashboard() {
               <h3 className="font-semibold text-yellow-800">Action Required</h3>
               <ul className="mt-1 space-y-1 text-sm text-yellow-700">
                 {pendingUsers > 0 && (
-                  <li>
-                    <Link href="/admin/users" className="underline hover:text-yellow-900">
-                      {pendingUsers} user{pendingUsers !== 1 ? "s" : ""} awaiting approval
-                    </Link>
-                  </li>
+                  <li><Link href="/admin/users" className="underline">{pendingUsers} user{pendingUsers !== 1 ? "s" : ""} awaiting approval</Link></li>
+                )}
+                {roleApplications > 0 && (
+                  <li><Link href="/admin/users" className="underline">{roleApplications} role application{roleApplications !== 1 ? "s" : ""} to review</Link></li>
                 )}
                 {pendingCourses > 0 && (
-                  <li>
-                    <Link href="/admin/courses" className="underline hover:text-yellow-900">
-                      {pendingCourses} course{pendingCourses !== 1 ? "s" : ""} awaiting review
-                    </Link>
-                  </li>
+                  <li><Link href="/admin/courses" className="underline">{pendingCourses} course{pendingCourses !== 1 ? "s" : ""} awaiting review</Link></li>
+                )}
+                {openReports > 0 && (
+                  <li><Link href="/admin/reports" className="underline">{openReports} open report{openReports !== 1 ? "s" : ""}</Link></li>
                 )}
               </ul>
             </div>
@@ -57,67 +54,38 @@ export default async function AdminDashboard() {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Total Users</p>
-          <p className="text-2xl font-bold mt-1">{userCount}</p>
-        </div>
-        <div className="border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Total Courses</p>
-          <p className="text-2xl font-bold mt-1">{courseCount}</p>
-        </div>
-        <div className="border border-border rounded-lg p-4 relative">
-          <p className="text-sm text-muted-foreground">Pending Courses</p>
-          <p className="text-2xl font-bold mt-1 text-warning">{pendingCourses}</p>
-          {pendingCourses > 0 && (
-            <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-          )}
-        </div>
-        <div className="border border-border rounded-lg p-4 relative">
-          <p className="text-sm text-muted-foreground">Pending Users</p>
-          <p className="text-2xl font-bold mt-1 text-warning">{pendingUsers}</p>
-          {pendingUsers > 0 && (
-            <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-          )}
-        </div>
-        <div className="border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">Enrollments</p>
-          <p className="text-2xl font-bold mt-1">{enrollmentCount}</p>
-        </div>
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[
+          { label: "Total Users", value: userCount },
+          { label: "Total Courses", value: courseCount },
+          { label: "Pending Courses", value: pendingCourses, warn: pendingCourses > 0 },
+          { label: "Pending Users", value: pendingUsers, warn: pendingUsers > 0 },
+          { label: "Open Reports", value: openReports, warn: openReports > 0 },
+          { label: "Enrollments", value: enrollmentCount },
+        ].map((stat) => (
+          <div key={stat.label} className="border border-border rounded-lg p-4 relative">
+            <p className="text-sm text-muted-foreground">{stat.label}</p>
+            <p className={`text-2xl font-bold mt-1 ${stat.warn ? "text-warning" : ""}`}>{stat.value}</p>
+            {stat.warn && <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />}
+          </div>
+        ))}
       </div>
 
-      {/* Quick Links */}
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link
-          href="/admin/courses"
-          className="border border-border rounded-lg p-6 hover:shadow-lg transition group"
-        >
-          <h3 className="font-semibold text-lg group-hover:text-primary transition">
-            Manage Courses
-          </h3>
-          <p className="text-muted-foreground text-sm mt-1">
-            Review, approve, reject, or remove courses
-          </p>
-          {pendingCourses > 0 && (
-            <span className="inline-block mt-3 text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full">
-              {pendingCourses} awaiting review
-            </span>
-          )}
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link href="/admin/courses" className="border border-border rounded-lg p-6 hover:shadow-lg transition group">
+          <h3 className="font-semibold text-lg group-hover:text-primary transition">Manage Courses</h3>
+          <p className="text-muted-foreground text-sm mt-1">Review, approve, reject, or remove courses</p>
         </Link>
-        <Link
-          href="/admin/users"
-          className="border border-border rounded-lg p-6 hover:shadow-lg transition group"
-        >
-          <h3 className="font-semibold text-lg group-hover:text-primary transition">
-            Manage Users
-          </h3>
-          <p className="text-muted-foreground text-sm mt-1">
-            Approve instructors, manage roles, view all users
-          </p>
-          {pendingUsers > 0 && (
-            <span className="inline-block mt-3 text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full">
-              {pendingUsers} awaiting approval
+        <Link href="/admin/users" className="border border-border rounded-lg p-6 hover:shadow-lg transition group">
+          <h3 className="font-semibold text-lg group-hover:text-primary transition">Manage Users</h3>
+          <p className="text-muted-foreground text-sm mt-1">Approve users, manage roles, delete accounts</p>
+        </Link>
+        <Link href="/admin/reports" className="border border-border rounded-lg p-6 hover:shadow-lg transition group">
+          <h3 className="font-semibold text-lg group-hover:text-primary transition">User Reports</h3>
+          <p className="text-muted-foreground text-sm mt-1">View and respond to user-submitted reports</p>
+          {openReports > 0 && (
+            <span className="inline-block mt-3 text-xs bg-danger/10 text-danger px-2 py-0.5 rounded-full">
+              {openReports} open
             </span>
           )}
         </Link>

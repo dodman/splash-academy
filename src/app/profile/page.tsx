@@ -15,7 +15,8 @@ interface ProfileData {
   country: string | null;
   city: string | null;
   phone: string | null;
-  emailVerified: boolean;
+  careerGoal: string | null;
+  appliedRole: string | null;
   createdAt: string;
 }
 
@@ -34,7 +35,7 @@ const COUNTRIES = [
 ];
 
 export default function ProfilePage() {
-  const { data: session, status: sessionStatus } = useSession();
+  const { status: sessionStatus } = useSession();
   const router = useRouter();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -43,7 +44,6 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
-  // Form state
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -51,6 +51,11 @@ export default function ProfilePage() {
   const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
   const [avatar, setAvatar] = useState("");
+  const [careerGoal, setCareerGoal] = useState("");
+
+  // Role application state
+  const [applyingRole, setApplyingRole] = useState(false);
+  const [applyMessage, setApplyMessage] = useState("");
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
@@ -73,6 +78,7 @@ export default function ProfilePage() {
           setCity(data.city || "");
           setPhone(data.phone || "");
           setAvatar(data.avatar || "");
+          setCareerGoal(data.careerGoal || "");
         }
         setLoading(false);
       })
@@ -92,7 +98,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, bio, dateOfBirth, country, city, phone, avatar }),
+        body: JSON.stringify({ name, bio, dateOfBirth, country, city, phone, avatar, careerGoal }),
       });
 
       const data = await res.json();
@@ -109,6 +115,28 @@ export default function ProfilePage() {
     }
 
     setSaving(false);
+  };
+
+  const applyForRole = async (role: string) => {
+    setApplyingRole(true);
+    setApplyMessage("");
+    try {
+      const res = await fetch("/api/apply-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setApplyMessage(data.message);
+        setProfile(prev => prev ? { ...prev, appliedRole: role } : null);
+      } else {
+        setApplyMessage(data.error || "Failed to apply");
+      }
+    } catch {
+      setApplyMessage("Something went wrong");
+    }
+    setApplyingRole(false);
   };
 
   if (loading || sessionStatus === "loading") {
@@ -143,17 +171,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">{profile?.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-muted-foreground">{profile?.email}</span>
-              {profile?.emailVerified && (
-                <span className="inline-flex items-center gap-1 text-xs text-success bg-success/10 px-2 py-0.5 rounded-full font-medium">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Verified
-                </span>
-              )}
-            </div>
+            <span className="text-sm text-muted-foreground">{profile?.email}</span>
             <p className="text-xs text-muted-foreground mt-1">
               {profile?.role} &middot; Member since{" "}
               {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : ""}
@@ -164,14 +182,10 @@ export default function ProfilePage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="bg-danger/10 text-danger text-sm px-4 py-3 rounded-lg">
-              {error}
-            </div>
+            <div className="bg-danger/10 text-danger text-sm px-4 py-3 rounded-lg">{error}</div>
           )}
           {success && (
-            <div className="bg-success/10 text-success text-sm px-4 py-3 rounded-lg">
-              {success}
-            </div>
+            <div className="bg-success/10 text-success text-sm px-4 py-3 rounded-lg">{success}</div>
           )}
 
           {/* Personal Information */}
@@ -180,35 +194,18 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium mb-1">Full Name *</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                  placeholder="Your full name"
-                />
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} required
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Your full name" />
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">Date of Birth</label>
-                <input
-                  type="date"
-                  value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                />
+                <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" />
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">Phone Number</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                  placeholder="+1 (555) 123-4567"
-                />
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="+1 (555) 123-4567" />
               </div>
             </div>
           </div>
@@ -219,27 +216,16 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Country</label>
-                <select
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white"
-                >
+                <select value={country} onChange={(e) => setCountry(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white">
                   <option value="">Select a country</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
+                  {COUNTRIES.map((c) => (<option key={c} value={c}>{c}</option>))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">City</label>
-                <input
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                  placeholder="Your city"
-                />
+                <input type="text" value={city} onChange={(e) => setCity(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Your city" />
               </div>
             </div>
           </div>
@@ -249,65 +235,80 @@ export default function ProfilePage() {
             <h2 className="text-lg font-semibold mb-4">About</h2>
             <div>
               <label className="block text-sm font-medium mb-1">Bio</label>
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                rows={4}
-                maxLength={500}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none"
-                placeholder="Tell us a bit about yourself..."
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {bio.length}/500 characters
-              </p>
+              <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} maxLength={500}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none" placeholder="Tell us a bit about yourself..." />
+              <p className="text-xs text-muted-foreground mt-1">{bio.length}/500 characters</p>
             </div>
-
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-1">Career Goal</label>
+              <input type="text" value={careerGoal} onChange={(e) => setCareerGoal(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="e.g., Become a full-stack developer" />
+            </div>
             <div className="mt-4">
               <label className="block text-sm font-medium mb-1">Avatar URL</label>
-              <input
-                type="url"
-                value={avatar}
-                onChange={(e) => setAvatar(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                placeholder="https://example.com/avatar.jpg"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Paste a URL to your profile photo
-              </p>
+              <input type="url" value={avatar} onChange={(e) => setAvatar(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="https://example.com/avatar.jpg" />
+              <p className="text-xs text-muted-foreground mt-1">Paste a URL to your profile photo</p>
             </div>
           </div>
 
-          {/* Email (read-only) */}
+          {/* Account */}
           <div className="border border-border rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-4">Account</h2>
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
-              <input
-                type="email"
-                value={profile?.email || ""}
-                disabled
-                className="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Email cannot be changed
-              </p>
+              <input type="email" value={profile?.email || ""} disabled
+                className="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed" />
+              <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
             </div>
             <div className="mt-4">
               <label className="block text-sm font-medium mb-1">Role</label>
-              <input
-                type="text"
-                value={profile?.role || ""}
-                disabled
-                className="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
-              />
+              <input type="text" value={profile?.role || ""} disabled
+                className="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed" />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-dark transition disabled:opacity-50"
-          >
+          {/* Apply for Role */}
+          {profile?.role === "STUDENT" && (
+            <div className="border border-border rounded-xl p-6">
+              <h2 className="text-lg font-semibold mb-2">Apply for a Role</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Want to teach or help manage the platform? Apply below and an admin will review your request.
+              </p>
+
+              {profile.appliedRole ? (
+                <div className="bg-yellow-50 text-yellow-800 text-sm px-4 py-3 rounded-lg">
+                  Your application for <strong>{profile.appliedRole.toLowerCase()}</strong> is pending admin review.
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => applyForRole("INSTRUCTOR")}
+                    disabled={applyingRole}
+                    className="flex-1 py-2.5 border-2 border-purple-300 text-purple-700 rounded-lg font-medium hover:bg-purple-50 transition disabled:opacity-50"
+                  >
+                    Apply as Instructor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyForRole("ADMIN")}
+                    disabled={applyingRole}
+                    className="flex-1 py-2.5 border-2 border-red-300 text-red-700 rounded-lg font-medium hover:bg-red-50 transition disabled:opacity-50"
+                  >
+                    Apply as Admin
+                  </button>
+                </div>
+              )}
+
+              {applyMessage && (
+                <p className="text-sm mt-3 text-muted-foreground">{applyMessage}</p>
+              )}
+            </div>
+          )}
+
+          <button type="submit" disabled={saving}
+            className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-dark transition disabled:opacity-50">
             {saving ? "Saving..." : "Save Profile"}
           </button>
         </form>
