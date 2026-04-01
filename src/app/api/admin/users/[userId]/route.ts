@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { isAdmin, isOverallAdmin, OVERALL_ADMIN_EMAIL } from "@/lib/roles";
 
 // PUT /api/admin/users/[userId] — approve, change role, handle applications
 export async function PUT(
@@ -9,7 +10,7 @@ export async function PUT(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -25,13 +26,29 @@ export async function PUT(
     return NextResponse.json({ error: "Cannot modify your own account" }, { status: 400 });
   }
 
+  const actorRole = session.user.role as string;
+
+  // Protect OVERALL_ADMIN from any changes
+  if (user.role === "OVERALL_ADMIN" && !isOverallAdmin(actorRole)) {
+    return NextResponse.json({ error: "Cannot modify the overall admin account" }, { status: 403 });
+  }
+
+  // Prevent OVERALL_ADMIN from being demoted
+  if (user.email === OVERALL_ADMIN_EMAIL && body.role && body.role !== "OVERALL_ADMIN") {
+    return NextResponse.json({ error: "The overall admin cannot be demoted" }, { status: 403 });
+  }
+
   const updateData: Record<string, unknown> = {};
 
   if (typeof body.approved === "boolean") {
     updateData.approved = body.approved;
   }
 
-  if (body.role && ["STUDENT", "INSTRUCTOR", "ADMIN"].includes(body.role)) {
+  if (body.role && ["STUDENT", "INSTRUCTOR", "ADMIN", "OVERALL_ADMIN"].includes(body.role)) {
+    // Only overall admin can promote to ADMIN or OVERALL_ADMIN
+    if ((body.role === "ADMIN" || body.role === "OVERALL_ADMIN") && !isOverallAdmin(actorRole)) {
+      return NextResponse.json({ error: "Only the overall admin can assign admin roles" }, { status: 403 });
+    }
     updateData.role = body.role;
     if (body.role === "STUDENT") {
       updateData.approved = true;
@@ -47,6 +64,10 @@ export async function PUT(
 
   // Reset password to default (123456)
   if (body.resetPassword) {
+    // ADMIN can only reset STUDENT/INSTRUCTOR passwords
+    if (!isOverallAdmin(actorRole) && (user.role === "ADMIN" || user.role === "OVERALL_ADMIN")) {
+      return NextResponse.json({ error: "You can only reset passwords for students and instructors" }, { status: 403 });
+    }
     updateData.passwordHash = await bcrypt.hash("123456", 10);
     updateData.resetToken = null;
     updateData.resetExpires = null;
@@ -70,7 +91,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth();
-    if (!session?.user?.id || session.user.role !== "ADMIN") {
+    if (!session?.user?.id || !isAdmin(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -78,6 +99,16 @@ export async function DELETE(
 
     if (userId === session.user.id) {
       return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
+    }
+
+    const user = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
+
+    if (user?.role === "OVERALL_ADMIN") {
+      return NextResponse.json({ error: "Cannot delete the overall admin account" }, { status: 403 });
+    }
+    // Regular ADMIN can't delete other admins
+    if (!isOverallAdmin(session.user.role as string) && user?.role === "ADMIN") {
+      return NextResponse.json({ error: "Only the overall admin can delete admin accounts" }, { status: 403 });
     }
 
     // Get user's courses and their lessons for cleanup

@@ -39,3 +39,39 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(lesson, { status: 201 });
 }
+
+export async function PUT(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "INSTRUCTOR") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { lessonId, title, videoUrl, duration, isFree } = await req.json();
+
+  if (!lessonId) {
+    return NextResponse.json({ error: "Missing lessonId" }, { status: 400 });
+  }
+
+  // Verify ownership through lesson -> section -> course
+  const lesson = await db.lesson.findUnique({
+    where: { id: lessonId },
+    include: { section: { include: { course: true } } },
+  });
+
+  if (!lesson || lesson.section.course.instructorId !== session.user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const data: Record<string, unknown> = {};
+  if (title !== undefined) data.title = title.trim();
+  if (videoUrl !== undefined) data.videoUrl = videoUrl.trim();
+  if (duration !== undefined) data.duration = parseInt(duration) || 0;
+  if (isFree !== undefined) data.isFree = Boolean(isFree);
+
+  const updated = await db.lesson.update({
+    where: { id: lessonId },
+    data,
+  });
+
+  return NextResponse.json(updated);
+}

@@ -32,3 +32,33 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(section, { status: 201 });
 }
+
+export async function PUT(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "INSTRUCTOR") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { sectionId, title } = await req.json();
+
+  if (!sectionId || !title?.trim()) {
+    return NextResponse.json({ error: "Missing sectionId or title" }, { status: 400 });
+  }
+
+  // Verify ownership through section -> course
+  const section = await db.section.findUnique({
+    where: { id: sectionId },
+    include: { course: true },
+  });
+
+  if (!section || section.course.instructorId !== session.user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const updated = await db.section.update({
+    where: { id: sectionId },
+    data: { title: title.trim() },
+  });
+
+  return NextResponse.json(updated);
+}

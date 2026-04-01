@@ -14,7 +14,7 @@ model User {
   name         String
   email        String   @unique
   passwordHash String
-  role         String   @default("STUDENT") // STUDENT | INSTRUCTOR | ADMIN
+  role         String   @default("STUDENT") // STUDENT | INSTRUCTOR | ADMIN | OVERALL_ADMIN
   approved     Boolean  @default(true) // false for new INSTRUCTOR/ADMIN signups until admin approves
   avatar       String?
   bio          String?
@@ -47,6 +47,9 @@ model User {
   favorites   Favorite[]
   wishlist    Wishlist[]
   reports     Report[]
+  questions   Question[]
+  answers     Answer[]
+  discussions Discussion[]
 }
 
 // ─── CATEGORIES ──────────────────────────────────────
@@ -69,6 +72,7 @@ model Course {
   thumbnail     String?
   status        String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | PUBLISHED | REJECTED
   rejectionNote String?
+  liveClassLink String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -81,6 +85,8 @@ model Course {
   enrollments Enrollment[]
   favorites   Favorite[]
   wishlist    Wishlist[]
+  questions   Question[]
+  discussions Discussion[]
 }
 
 // ─── SECTIONS ────────────────────────────────────────
@@ -106,6 +112,7 @@ model Lesson {
   sectionId String
   section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   progress  Progress[]
+  questions Question[]
 }
 
 // ─── ENROLLMENTS ─────────────────────────────────────
@@ -178,4 +185,48 @@ model Report {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── QUESTIONS ──────────────────────────────────────
+
+model Question {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  lessonId  String?
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson  Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  answers Answer[]
+}
+
+// ─── ANSWERS ────────────────────────────────────────
+
+model Answer {
+  id         String   @id @default(cuid())
+  userId     String
+  questionId String
+  body       String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+// ─── DISCUSSIONS ────────────────────────────────────
+
+model Discussion {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }

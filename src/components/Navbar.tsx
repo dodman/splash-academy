@@ -24,7 +24,7 @@ export default function Navbar() {
 
   // Fetch admin notifications
   useEffect(() => {
-    if (user?.role !== "ADMIN") return;
+    if (user?.role !== "ADMIN" && user?.role !== "OVERALL_ADMIN") return;
     const fetchNotifs = () => {
       fetch("/api/admin/notifications")
         .then((r) => r.json())
@@ -61,7 +61,7 @@ export default function Navbar() {
 
   const getDashboardLink = () => {
     if (!user) return "/login";
-    if (user.role === "ADMIN") return "/admin";
+    if (user.role === "ADMIN" || user.role === "OVERALL_ADMIN") return "/admin";
     if (user.role === "INSTRUCTOR") return "/instructor";
     return "/dashboard";
   };
@@ -101,7 +101,7 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
-                {user.role === "ADMIN" && (
+                {(user.role === "ADMIN" || user.role === "OVERALL_ADMIN") && (
                   <div ref={notifRef} className="relative ml-2">
                     <button
                       onClick={() => setNotifOpen(!notifOpen)}
@@ -327,7 +327,7 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
-                {user.role === "ADMIN" && pendingCount > 0 && (
+                {(user.role === "ADMIN" || user.role === "OVERALL_ADMIN") && pendingCount > 0 && (
                   <a
                     href="/admin/courses"
                     className="flex items-center gap-3 px-3 py-2.5 bg-warning/10 rounded-lg"

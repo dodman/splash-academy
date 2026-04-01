@@ -26,6 +26,7 @@ interface EnrollmentData {
   totalLessons: number;
   completedLessons: number;
   progress: number;
+  lastLessonId: string | null;
 }
 
 interface CategoryData {
@@ -42,14 +43,9 @@ interface LessonResult {
 
 export default function LoggedInHome() {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<Tab>("favorites");
+  const [activeTab, setActiveTab] = useState<Tab>("search");
 
   const tabs: { key: Tab; label: string; icon: ReactNode }[] = [
-    {
-      key: "favorites",
-      label: "Favorites",
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>,
-    },
     {
       key: "search",
       label: "Search",
@@ -59,6 +55,11 @@ export default function LoggedInHome() {
       key: "learning",
       label: "My Learning",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+    },
+    {
+      key: "favorites",
+      label: "Favorites",
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>,
     },
     {
       key: "wishlist",
@@ -323,7 +324,10 @@ function LearningTab() {
       {enrollments.map((enrollment) => (
         <Link
           key={enrollment.id}
-          href={`/courses/${enrollment.course.slug}`}
+          href={enrollment.lastLessonId
+            ? `/courses/${enrollment.course.slug}/learn/${enrollment.lastLessonId}`
+            : `/courses/${enrollment.course.slug}`
+          }
           className="border border-border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 bg-white group"
         >
           <div className="h-32 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">

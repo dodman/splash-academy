@@ -21,6 +21,7 @@ export default function EditCoursePage() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("0");
   const [categoryId, setCategoryId] = useState("");
+  const [liveClassLink, setLiveClassLink] = useState("");
 
   const fetchCourse = useCallback(async () => {
     const res = await fetch(`/api/instructor/courses/${courseId}`);
@@ -30,6 +31,7 @@ export default function EditCoursePage() {
       setDescription(data.description);
       setPrice(data.price.toString());
       setCategoryId(data.categoryId);
+      setLiveClassLink(data.liveClassLink || "");
     }
     setLoading(false);
   }, [courseId]);
@@ -54,6 +56,7 @@ export default function EditCoursePage() {
         description,
         price: parseFloat(price),
         categoryId,
+        liveClassLink,
       }),
     });
 
@@ -140,6 +143,19 @@ export default function EditCoursePage() {
               ))}
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Live Class Link
+          </label>
+          <input
+            type="url"
+            value={liveClassLink}
+            onChange={(e) => setLiveClassLink(e.target.value)}
+            placeholder="https://zoom.us/j/... or Google Meet link"
+            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          />
         </div>
 
         <div className="flex gap-3">

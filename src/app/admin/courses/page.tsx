@@ -45,6 +45,22 @@ export default function AdminCoursesPage() {
     }
   };
 
+  const handlePriceEdit = async (courseId: string, currentPrice: number) => {
+    const newPrice = prompt("Enter new price:", currentPrice.toString());
+    if (newPrice === null) return;
+    const price = parseFloat(newPrice);
+    if (isNaN(price) || price < 0) {
+      alert("Invalid price");
+      return;
+    }
+    const res = await fetch(`/api/admin/courses/${courseId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "updatePrice", price }),
+    });
+    if (res.ok) fetchCourses();
+  };
+
   const handleDelete = async (courseId: string) => {
     if (!confirm("Delete this course permanently?")) return;
     const res = await fetch(`/api/admin/courses/${courseId}`, {
@@ -178,6 +194,12 @@ export default function AdminCoursesPage() {
                       Publish
                     </button>
                   )}
+                  <button
+                    onClick={() => handlePriceEdit(course.id, course.price)}
+                    className="text-xs px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition"
+                  >
+                    Edit Price
+                  </button>
                   <button
                     onClick={() => handleDelete(course.id)}
                     className="text-xs px-3 py-1.5 text-danger border border-danger/30 rounded-lg hover:bg-danger/5 transition"

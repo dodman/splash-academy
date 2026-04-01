@@ -2,10 +2,11 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { isAdmin } from "@/lib/roles";
 
 export default async function AdminDashboard() {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") redirect("/");
+  if (!session?.user?.id || !isAdmin(session.user.role)) redirect("/");
 
   const [userCount, courseCount, pendingCourses, enrollmentCount, pendingUsers, openReports, roleApplications] =
     await Promise.all([

@@ -30,7 +30,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!passwordMatch) return null;
 
         // Block unapproved instructor/admin accounts
-        if (!user.approved && (user.role === "INSTRUCTOR" || user.role === "ADMIN")) {
+        if (!user.approved && (user.role === "INSTRUCTOR" || user.role === "ADMIN" || user.role === "OVERALL_ADMIN")) {
           throw new Error("Your account is pending admin approval.");
         }
 

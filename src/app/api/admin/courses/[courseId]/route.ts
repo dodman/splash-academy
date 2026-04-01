@@ -1,22 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isAdmin } from "@/lib/roles";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ courseId: string }> }
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { courseId } = await params;
-  const { action, rejectionNote } = await req.json();
+  const body = await req.json();
+  const { action, rejectionNote, price } = body;
 
   const course = await db.course.findUnique({ where: { id: courseId } });
   if (!course) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Handle price update
+  if (action === "updatePrice") {
+    if (typeof price !== "number" || price < 0) {
+      return NextResponse.json({ error: "Invalid price" }, { status: 400 });
+    }
+    const updated = await db.course.update({
+      where: { id: courseId },
+      data: { price },
+    });
+    return NextResponse.json(updated);
   }
 
   let newStatus: string;
@@ -54,7 +68,7 @@ export async function DELETE(
   { params }: { params: Promise<{ courseId: string }> }
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "ADMIN") {
+  if (!session?.user?.id || !isAdmin(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

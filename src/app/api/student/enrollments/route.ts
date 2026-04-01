@@ -42,11 +42,27 @@ export async function GET() {
           },
         },
       });
+      // Find the last lesson the student interacted with (most recent progress)
+      const lastProgress = await db.progress.findFirst({
+        where: {
+          userId: session.user.id,
+          lesson: { section: { courseId: enrollment.courseId } },
+        },
+        orderBy: { completedAt: "desc" },
+        select: { lessonId: true },
+      });
+
+      // If no progress, get the first lesson of the course
+      const firstLesson = enrollment.course.sections
+        .sort((a, b) => a.lessons.length - b.lessons.length) // fallback sort
+        .flatMap((s) => s.lessons)?.[0];
+
       return {
         ...enrollment,
         totalLessons,
         completedLessons,
         progress: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0,
+        lastLessonId: lastProgress?.lessonId || firstLesson?.id || null,
       };
     })
   );

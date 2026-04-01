@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 interface User {
   id: string;
@@ -14,9 +15,12 @@ interface User {
 }
 
 export default function AdminUsersPage() {
+  const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "applications">("all");
+  const myRole = session?.user?.role || "ADMIN";
+  const isOA = myRole === "OVERALL_ADMIN";
 
   const fetchUsers = () => {
     fetch("/api/admin/users")
@@ -92,6 +96,14 @@ export default function AdminUsersPage() {
     STUDENT: "bg-blue-100 text-blue-700",
     INSTRUCTOR: "bg-purple-100 text-purple-700",
     ADMIN: "bg-red-100 text-red-700",
+    OVERALL_ADMIN: "bg-amber-100 text-amber-700",
+  };
+
+  // Check if current user can manage a target user
+  const canManage = (targetRole: string) => {
+    if (targetRole === "OVERALL_ADMIN") return false;
+    if (targetRole === "ADMIN" && !isOA) return false;
+    return true;
   };
 
   const pendingUsers = users.filter((u) => !u.approved);
@@ -144,15 +156,21 @@ export default function AdminUsersPage() {
                 <td className="py-3 font-medium">{user.name}</td>
                 <td className="py-3 text-muted-foreground">{user.email}</td>
                 <td className="py-3">
-                  <select
-                    value={user.role}
-                    onChange={(e) => changeRole(user.id, e.target.value)}
-                    className={`text-xs px-2 py-0.5 rounded-full border-0 cursor-pointer ${roleColors[user.role] || ""}`}
-                  >
-                    <option value="STUDENT">STUDENT</option>
-                    <option value="INSTRUCTOR">INSTRUCTOR</option>
-                    <option value="ADMIN">ADMIN</option>
-                  </select>
+                  {canManage(user.role) ? (
+                    <select
+                      value={user.role}
+                      onChange={(e) => changeRole(user.id, e.target.value)}
+                      className={`text-xs px-2 py-0.5 rounded-full border-0 cursor-pointer ${roleColors[user.role] || ""}`}
+                    >
+                      <option value="STUDENT">STUDENT</option>
+                      <option value="INSTRUCTOR">INSTRUCTOR</option>
+                      {isOA && <option value="ADMIN">ADMIN</option>}
+                    </select>
+                  ) : (
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${roleColors[user.role] || ""}`}>
+                      {user.role}
+                    </span>
+                  )}
                 </td>
                 <td className="py-3">
                   {user.approved ? (
@@ -193,14 +211,18 @@ export default function AdminUsersPage() {
                         </button>
                       </>
                     )}
-                    <button onClick={() => resetPassword(user.id, user.name)}
-                      className="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition">
-                      Reset PW
-                    </button>
-                    <button onClick={() => deleteUser(user.id)}
-                      className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition">
-                      Delete
-                    </button>
+                    {canManage(user.role) && (
+                      <button onClick={() => resetPassword(user.id, user.name)}
+                        className="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition">
+                        Reset PW
+                      </button>
+                    )}
+                    {canManage(user.role) && (
+                      <button onClick={() => deleteUser(user.id)}
+                        className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition">
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

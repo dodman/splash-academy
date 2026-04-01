@@ -14,7 +14,11 @@ export default async function LearnPage({
 
   const course = await db.course.findUnique({
     where: { slug },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      liveClassLink: true,
       sections: {
         orderBy: { order: "asc" },
         include: {
@@ -60,7 +64,7 @@ export default async function LearnPage({
 
   return (
     <LessonPlayer
-      course={{ id: course.id, title: course.title, slug: course.slug }}
+      course={{ id: course.id, title: course.title, slug: course.slug, liveClassLink: course.liveClassLink }}
       sections={course.sections}
       currentLesson={currentLesson}
       prevLessonId={prevLesson?.id || null}

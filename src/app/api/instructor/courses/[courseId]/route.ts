@@ -58,6 +58,7 @@ export async function PUT(
       price: body.price !== undefined ? parseFloat(body.price) : undefined,
       categoryId: body.categoryId,
       thumbnail: body.thumbnail,
+      liveClassLink: body.liveClassLink?.trim() || null,
     },
   });
 

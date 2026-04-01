@@ -37,13 +37,13 @@ export default auth((req) => {
 
   // Role-based route protection
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-    if (user.role !== "ADMIN") {
+    if (user.role !== "ADMIN" && user.role !== "OVERALL_ADMIN") {
       return NextResponse.redirect(new URL("/", req.url));
     }
   }
 
   if (pathname.startsWith("/instructor") || pathname.startsWith("/api/instructor")) {
-    if (user.role !== "INSTRUCTOR" && user.role !== "ADMIN") {
+    if (user.role !== "INSTRUCTOR" && user.role !== "ADMIN" && user.role !== "OVERALL_ADMIN") {
       return NextResponse.redirect(new URL("/", req.url));
     }
   }
