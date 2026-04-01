@@ -31,6 +31,10 @@ model User {
   phone       String?
   careerGoal  String?
 
+  // Password reset
+  resetToken   String?   @unique
+  resetExpires DateTime?
+
   // Role application
   appliedRole String? // "INSTRUCTOR" or "ADMIN" — pending application
 
@@ -112,7 +116,7 @@ model Enrollment {
   courseId   String
   createdAt DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   course Course @relation(fields: [courseId], references: [id])
 
   @@unique([userId, courseId])
@@ -127,7 +131,7 @@ model Progress {
   completed   Boolean   @default(false)
   completedAt DateTime?
 
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   lesson Lesson @relation(fields: [lessonId], references: [id])
 
   @@unique([userId, lessonId])

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import EnrollButton from "./EnrollButton";
+import CourseActions from "./CourseActions";
 
 export default async function CourseDetailPage({
   params,
@@ -59,6 +60,17 @@ export default async function CourseDetailPage({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* Back Button */}
+      <Link
+        href="/courses"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition group"
+      >
+        <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Courses
+      </Link>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Left: Course Info */}
         <div className="lg:col-span-2 animate-fade-in">
@@ -83,6 +95,8 @@ export default async function CourseDetailPage({
               {Math.ceil(totalDuration / 60)} min
             </span>
           </div>
+
+          <CourseActions courseId={course.id} isLoggedIn={!!session?.user?.id} />
 
           <div className="mt-6">
             <h2 className="text-lg font-semibold">About this course</h2>

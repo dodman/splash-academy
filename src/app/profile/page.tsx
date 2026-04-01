@@ -21,17 +21,26 @@ interface ProfileData {
 }
 
 const COUNTRIES = [
-  "Afghanistan", "Albania", "Algeria", "Argentina", "Australia", "Austria",
-  "Bangladesh", "Belgium", "Brazil", "Canada", "Chile", "China", "Colombia",
-  "Croatia", "Czech Republic", "Denmark", "Egypt", "Ethiopia", "Finland",
-  "France", "Germany", "Ghana", "Greece", "Hungary", "India", "Indonesia",
-  "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan",
-  "Kenya", "Malaysia", "Mexico", "Morocco", "Netherlands", "New Zealand",
-  "Nigeria", "Norway", "Pakistan", "Peru", "Philippines", "Poland", "Portugal",
-  "Romania", "Russia", "Saudi Arabia", "Singapore", "South Africa", "South Korea",
-  "Spain", "Sri Lanka", "Sweden", "Switzerland", "Tanzania", "Thailand",
-  "Turkey", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom",
-  "United States", "Venezuela", "Vietnam", "Zimbabwe",
+  // Africa (all 54 countries)
+  "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi",
+  "Cabo Verde", "Cameroon", "Central African Republic", "Chad", "Comoros",
+  "Congo (Brazzaville)", "Congo (DRC)", "Côte d'Ivoire", "Djibouti", "Egypt",
+  "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia", "Gabon", "Gambia",
+  "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", "Libya",
+  "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco",
+  "Mozambique", "Namibia", "Niger", "Nigeria", "Rwanda", "São Tomé and Príncipe",
+  "Senegal", "Seychelles", "Sierra Leone", "Somalia", "South Africa", "South Sudan",
+  "Sudan", "Tanzania", "Togo", "Tunisia", "Uganda", "Zambia", "Zimbabwe",
+  // Rest of the world
+  "Afghanistan", "Albania", "Argentina", "Australia", "Austria", "Bangladesh",
+  "Belgium", "Brazil", "Canada", "Chile", "China", "Colombia", "Croatia",
+  "Czech Republic", "Denmark", "Finland", "France", "Germany", "Greece",
+  "Hungary", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
+  "Jamaica", "Japan", "Jordan", "Malaysia", "Mexico", "Netherlands", "New Zealand",
+  "Norway", "Pakistan", "Peru", "Philippines", "Poland", "Portugal", "Romania",
+  "Russia", "Saudi Arabia", "Singapore", "South Korea", "Spain", "Sri Lanka",
+  "Sweden", "Switzerland", "Thailand", "Turkey", "Ukraine", "United Arab Emirates",
+  "United Kingdom", "United States", "Venezuela", "Vietnam",
 ];
 
 export default function ProfilePage() {
@@ -52,6 +61,14 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState("");
   const [avatar, setAvatar] = useState("");
   const [careerGoal, setCareerGoal] = useState("");
+
+  // Change password state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   // Role application state
   const [applyingRole, setApplyingRole] = useState(false);
@@ -137,6 +154,48 @@ export default function ProfilePage() {
       setApplyMessage("Something went wrong");
     }
     setApplyingRole(false);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    setChangingPassword(true);
+
+    try {
+      const res = await fetch("/api/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setPasswordError(data.error || "Failed to change password");
+      } else {
+        setPasswordSuccess("Password changed successfully!");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setTimeout(() => setPasswordSuccess(""), 3000);
+      }
+    } catch {
+      setPasswordError("Something went wrong");
+    }
+
+    setChangingPassword(false);
   };
 
   if (loading || sessionStatus === "loading") {
@@ -265,6 +324,42 @@ export default function ProfilePage() {
               <label className="block text-sm font-medium mb-1">Role</label>
               <input type="text" value={profile?.role || ""} disabled
                 className="w-full px-3 py-2 border border-border rounded-lg bg-muted text-muted-foreground cursor-not-allowed" />
+            </div>
+          </div>
+
+          {/* Change Password */}
+          <div className="border border-border rounded-xl p-6">
+            <h2 className="text-lg font-semibold mb-4">Change Password</h2>
+            {passwordError && (
+              <div className="bg-danger/10 text-danger text-sm px-4 py-3 rounded-lg mb-4">{passwordError}</div>
+            )}
+            {passwordSuccess && (
+              <div className="bg-success/10 text-success text-sm px-4 py-3 rounded-lg mb-4">{passwordSuccess}</div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Current Password</label>
+                <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Enter current password" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">New Password</label>
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="At least 6 characters" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Confirm New Password</label>
+                <input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Repeat new password" />
+              </div>
+              <button
+                type="button"
+                onClick={handleChangePassword}
+                disabled={changingPassword || !currentPassword || !newPassword || !confirmNewPassword}
+                className="w-full py-2.5 border-2 border-primary text-primary rounded-lg font-medium hover:bg-primary hover:text-white transition disabled:opacity-50"
+              >
+                {changingPassword ? "Changing..." : "Change Password"}
+              </button>
             </div>
           </div>
 

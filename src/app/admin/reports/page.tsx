@@ -35,6 +35,7 @@ export default function AdminReportsPage() {
       body: JSON.stringify({ status, ...(adminNote !== undefined && { adminNote }) }),
     });
     fetchReports();
+    window.dispatchEvent(new Event("admin-notifications-refresh"));
   };
 
   const statusColors: Record<string, string> = {

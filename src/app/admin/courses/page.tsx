@@ -39,7 +39,10 @@ export default function AdminCoursesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, rejectionNote }),
     });
-    if (res.ok) fetchCourses();
+    if (res.ok) {
+      fetchCourses();
+      window.dispatchEvent(new Event("admin-notifications-refresh"));
+    }
   };
 
   const handleDelete = async (courseId: string) => {
@@ -47,7 +50,10 @@ export default function AdminCoursesPage() {
     const res = await fetch(`/api/admin/courses/${courseId}`, {
       method: "DELETE",
     });
-    if (res.ok) fetchCourses();
+    if (res.ok) {
+      fetchCourses();
+      window.dispatchEvent(new Event("admin-notifications-refresh"));
+    }
   };
 
   const filtered =

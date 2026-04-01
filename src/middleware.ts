@@ -13,11 +13,15 @@ export default auth((req) => {
     pathname === "/" ||
     pathname === "/login" ||
     pathname === "/signup" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password" ||
     pathname.startsWith("/courses") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/courses") ||
     pathname.startsWith("/api/categories") ||
     pathname.startsWith("/api/signup") ||
+    pathname.startsWith("/api/forgot-password") ||
+    pathname.startsWith("/api/reset-password") ||
     pathname.startsWith("/api/search") ||
     pathname.startsWith("/api/webhooks") ||
     pathname.startsWith("/_next") ||

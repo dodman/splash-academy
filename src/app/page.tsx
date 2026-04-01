@@ -5,13 +5,8 @@ import LoggedInHome from "@/components/LoggedInHome";
 
 export default async function HomePage() {
   const session = await auth();
+  const isLoggedIn = !!session?.user?.id;
 
-  // Logged-in users get the tabbed dashboard
-  if (session?.user?.id) {
-    return <LoggedInHome />;
-  }
-
-  // Guests get the landing page
   const courseCount = await db.course.count({
     where: { status: "PUBLISHED" },
   });
@@ -21,7 +16,10 @@ export default async function HomePage() {
   });
 
   return (
-    <div>
+    <>
+      {/* Logged-in dashboard tabs */}
+      {isLoggedIn && <LoggedInHome />}
+
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary-dark to-[#4c1d95] text-white">
         <div className="absolute inset-0 opacity-10">
@@ -44,12 +42,14 @@ export default async function HomePage() {
               >
                 Browse Courses
               </Link>
-              <Link
-                href="/signup"
-                className="border-2 border-white/30 text-white px-8 py-3.5 rounded-xl font-semibold text-center hover:bg-white/10 hover:border-white/50 transition-all duration-200"
-              >
-                Get Started Free
-              </Link>
+              {!isLoggedIn && (
+                <Link
+                  href="/signup"
+                  className="border-2 border-white/30 text-white px-8 py-3.5 rounded-xl font-semibold text-center hover:bg-white/10 hover:border-white/50 transition-all duration-200"
+                >
+                  Get Started Free
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -129,15 +129,19 @@ export default async function HomePage() {
       {/* CTA */}
       <section className="bg-gradient-to-r from-primary/5 to-primary-light/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <h2 className="text-3xl font-bold">Ready to start learning?</h2>
+          <h2 className="text-3xl font-bold">
+            {isLoggedIn ? "Continue your learning journey" : "Ready to start learning?"}
+          </h2>
           <p className="mt-3 text-muted-foreground text-lg max-w-md mx-auto">
-            Join Splash Academy today and start your learning journey.
+            {isLoggedIn
+              ? "Explore more courses and keep building your skills."
+              : "Join Splash Academy today and start your learning journey."}
           </p>
           <Link
-            href="/signup"
+            href={isLoggedIn ? "/courses" : "/signup"}
             className="inline-block mt-8 bg-primary text-white px-10 py-3.5 rounded-xl font-semibold hover:bg-primary-dark hover:shadow-lg transition-all duration-200"
           >
-            Get Started Free
+            {isLoggedIn ? "Browse Courses" : "Get Started Free"}
           </Link>
         </div>
       </section>
@@ -154,8 +158,15 @@ export default async function HomePage() {
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
               <Link href="/courses" className="hover:text-foreground transition">Courses</Link>
-              <Link href="/signup" className="hover:text-foreground transition">Sign Up</Link>
-              <Link href="/login" className="hover:text-foreground transition">Login</Link>
+              {!isLoggedIn && (
+                <>
+                  <Link href="/signup" className="hover:text-foreground transition">Sign Up</Link>
+                  <Link href="/login" className="hover:text-foreground transition">Login</Link>
+                </>
+              )}
+              {isLoggedIn && (
+                <Link href="/profile" className="hover:text-foreground transition">Profile</Link>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
               &copy; 2026 Splash Academy
@@ -163,6 +174,6 @@ export default async function HomePage() {
           </div>
         </div>
       </footer>
-    </div>
+    </>
   );
 }

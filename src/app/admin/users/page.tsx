@@ -27,6 +27,11 @@ export default function AdminUsersPage() {
       });
   };
 
+  const refreshAndFetch = () => {
+    fetchUsers();
+    window.dispatchEvent(new Event("admin-notifications-refresh"));
+  };
+
   useEffect(() => { fetchUsers(); }, []);
 
   const approveUser = async (userId: string) => {
@@ -35,7 +40,7 @@ export default function AdminUsersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ approved: true }),
     });
-    fetchUsers();
+    refreshAndFetch();
   };
 
   const changeRole = async (userId: string, newRole: string) => {
@@ -44,7 +49,7 @@ export default function AdminUsersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role: newRole }),
     });
-    fetchUsers();
+    refreshAndFetch();
   };
 
   const approveRoleApplication = async (userId: string, role: string) => {
@@ -53,7 +58,7 @@ export default function AdminUsersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role, approved: true, clearApplication: true }),
     });
-    fetchUsers();
+    refreshAndFetch();
   };
 
   const rejectRoleApplication = async (userId: string) => {
@@ -62,13 +67,25 @@ export default function AdminUsersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clearApplication: true }),
     });
-    fetchUsers();
+    refreshAndFetch();
+  };
+
+  const resetPassword = async (userId: string, userName: string) => {
+    if (!confirm(`Reset password for ${userName} to "123456"?`)) return;
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resetPassword: true }),
+    });
+    if (res.ok) {
+      alert(`Password for ${userName} has been reset to "123456"`);
+    }
   };
 
   const deleteUser = async (userId: string) => {
     if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
     await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
-    fetchUsers();
+    refreshAndFetch();
   };
 
   const roleColors: Record<string, string> = {
@@ -176,6 +193,10 @@ export default function AdminUsersPage() {
                         </button>
                       </>
                     )}
+                    <button onClick={() => resetPassword(user.id, user.name)}
+                      className="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition">
+                      Reset PW
+                    </button>
                     <button onClick={() => deleteUser(user.id)}
                       className="text-xs px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition">
                       Delete

@@ -15,6 +15,10 @@ export default function Navbar() {
   const [pendingUsers, setPendingUsers] = useState<
     { id: string; name: string; email: string; role: string; createdAt: string }[]
   >([]);
+  const [roleApplications, setRoleApplications] = useState<
+    { id: string; name: string; email: string; appliedRole: string; createdAt: string }[]
+  >([]);
+  const [openReports, setOpenReports] = useState(0);
   const notifRef = useRef<HTMLDivElement>(null);
   const user = session?.user;
 
@@ -28,12 +32,20 @@ export default function Navbar() {
           setPendingCount(data.pendingCount || 0);
           setPendingCourses(data.pendingCourses || []);
           setPendingUsers(data.pendingUsers || []);
+          setRoleApplications(data.roleApplications || []);
+          setOpenReports(data.openReports || 0);
         })
         .catch(() => {});
     };
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 30000); // poll every 30s
-    return () => clearInterval(interval);
+    // Listen for manual refresh events (e.g., after admin actions)
+    const handleRefresh = () => fetchNotifs();
+    window.addEventListener("admin-notifications-refresh", handleRefresh);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("admin-notifications-refresh", handleRefresh);
+    };
   }, [user?.role]);
 
   // Close notification dropdown on outside click
@@ -110,15 +122,15 @@ export default function Navbar() {
                         <div className="px-4 py-3 border-b border-border bg-muted/50">
                           <p className="font-semibold text-sm">Notifications</p>
                         </div>
-                        {pendingCourses.length === 0 && pendingUsers.length === 0 ? (
+                        {pendingCount === 0 ? (
                           <div className="px-4 py-6 text-center text-sm text-muted-foreground">
                             No pending items
                           </div>
                         ) : (
                           <div className="max-h-72 overflow-y-auto">
-                            {pendingUsers.map((u) => (
+                            {roleApplications.map((u) => (
                               <a
-                                key={u.id}
+                                key={`app-${u.id}`}
                                 href="/admin/users"
                                 className="block px-4 py-3 hover:bg-muted/50 transition border-b border-border last:border-0"
                                 onClick={() => setNotifOpen(false)}
@@ -126,13 +138,35 @@ export default function Navbar() {
                                 <div className="flex items-start gap-3">
                                   <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium leading-snug">{u.name}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      Applied for {u.appliedRole} role
+                                    </p>
+                                  </div>
+                                </div>
+                              </a>
+                            ))}
+                            {pendingUsers.map((u) => (
+                              <a
+                                key={`user-${u.id}`}
+                                href="/admin/users"
+                                className="block px-4 py-3 hover:bg-muted/50 transition border-b border-border last:border-0"
+                                onClick={() => setNotifOpen(false)}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                   </div>
                                   <div>
                                     <p className="text-sm font-medium leading-snug">{u.name}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                      New {u.role.toLowerCase()} — awaiting approval
+                                      New user — awaiting approval
                                     </p>
                                   </div>
                                 </div>
@@ -140,7 +174,7 @@ export default function Navbar() {
                             ))}
                             {pendingCourses.map((course) => (
                               <a
-                                key={course.id}
+                                key={`course-${course.id}`}
                                 href="/admin/courses"
                                 className="block px-4 py-3 hover:bg-muted/50 transition border-b border-border last:border-0"
                                 onClick={() => setNotifOpen(false)}
@@ -160,6 +194,27 @@ export default function Navbar() {
                                 </div>
                               </a>
                             ))}
+                            {openReports > 0 && (
+                              <a
+                                href="/admin/reports"
+                                className="block px-4 py-3 hover:bg-muted/50 transition border-b border-border last:border-0"
+                                onClick={() => setNotifOpen(false)}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium leading-snug">{openReports} open report{openReports !== 1 ? "s" : ""}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      Click to review
+                                    </p>
+                                  </div>
+                                </div>
+                              </a>
+                            )}
                           </div>
                         )}
                         <div className="flex border-t border-border">

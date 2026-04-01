@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 interface Course {
   id: string;
@@ -39,17 +40,32 @@ function CourseCardSkeleton() {
 }
 
 export default function CoursesPage() {
+  const { data: session } = useSession();
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [loading, setLoading] = useState(true);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch("/api/categories")
       .then((r) => r.json())
       .then(setCategories);
   }, []);
+
+  // Load user favorites/wishlist
+  useEffect(() => {
+    if (!session?.user) return;
+    Promise.all([
+      fetch("/api/favorites").then((r) => r.json()),
+      fetch("/api/wishlist").then((r) => r.json()),
+    ]).then(([favs, wishes]) => {
+      if (Array.isArray(favs)) setFavoriteIds(new Set(favs.map((f: { courseId: string }) => f.courseId)));
+      if (Array.isArray(wishes)) setWishlistIds(new Set(wishes.map((w: { courseId: string }) => w.courseId)));
+    });
+  }, [session]);
 
   useEffect(() => {
     setLoading(true);
@@ -65,8 +81,53 @@ export default function CoursesPage() {
       });
   }, [search, selectedCategory]);
 
+  const toggleFavorite = async (e: React.MouseEvent, courseId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const res = await fetch("/api/favorites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        data.status === "added" ? next.add(courseId) : next.delete(courseId);
+        return next;
+      });
+    }
+  };
+
+  const toggleWishlist = async (e: React.MouseEvent, courseId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const res = await fetch("/api/wishlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courseId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setWishlistIds((prev) => {
+        const next = new Set(prev);
+        data.status === "added" ? next.add(courseId) : next.delete(courseId);
+        return next;
+      });
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition group"
+      >
+        <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Home
+      </Link>
       <div className="animate-fade-in">
         <h1 className="text-3xl font-bold">Browse Courses</h1>
         <p className="text-muted-foreground mt-2 text-lg">
@@ -143,9 +204,39 @@ export default function CoursesPage() {
                   </span>
                 )}
                 {course.price === 0 && (
-                  <span className="absolute top-3 right-3 bg-success text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                  <span className="absolute top-3 left-3 bg-success text-white text-xs font-semibold px-2.5 py-1 rounded-full">
                     Free
                   </span>
+                )}
+                {session?.user && (
+                  <div className="absolute top-3 right-3 flex gap-1.5">
+                    <button
+                      onClick={(e) => toggleFavorite(e, course.id)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                        favoriteIds.has(course.id)
+                          ? "bg-red-500 text-white"
+                          : "bg-white/90 text-gray-500 hover:bg-white hover:text-red-500"
+                      }`}
+                      title={favoriteIds.has(course.id) ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <svg className="w-4 h-4" fill={favoriteIds.has(course.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => toggleWishlist(e, course.id)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                        wishlistIds.has(course.id)
+                          ? "bg-purple-500 text-white"
+                          : "bg-white/90 text-gray-500 hover:bg-white hover:text-purple-500"
+                      }`}
+                      title={wishlistIds.has(course.id) ? "Remove from wishlist" : "Add to wishlist"}
+                    >
+                      <svg className="w-4 h-4" fill={wishlistIds.has(course.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                    </button>
+                  </div>
                 )}
               </div>
               <div className="p-5">

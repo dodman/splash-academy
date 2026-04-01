@@ -31,11 +31,21 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     }),
     db.report.count({ where: { status: "OPEN" } }),
-    db.user.count({ where: { appliedRole: { not: null } } }),
+    db.user.findMany({
+      where: { appliedRole: { not: null } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        appliedRole: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   return NextResponse.json({
-    pendingCount: pendingCourses.length + pendingUsers.length + openReports + roleApplications,
+    pendingCount: pendingCourses.length + pendingUsers.length + openReports + roleApplications.length,
     pendingCourses,
     pendingUsers,
     openReports,

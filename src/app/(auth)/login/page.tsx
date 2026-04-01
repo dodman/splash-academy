@@ -3,14 +3,24 @@
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Load saved email on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("splash_saved_email");
+    if (saved) {
+      setEmail(saved);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +38,13 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Invalid email or password");
       return;
+    }
+
+    // Save or clear login details
+    if (rememberMe) {
+      localStorage.setItem("splash_saved_email", email);
+    } else {
+      localStorage.removeItem("splash_saved_email");
     }
 
     router.push("/");
@@ -73,6 +90,21 @@ export default function LoginPage() {
               className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
               placeholder="Your password"
             />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50"
+              />
+              <span className="text-sm text-muted-foreground">Remember me</span>
+            </label>
+            <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+              Forgot password?
+            </Link>
           </div>
 
           <button

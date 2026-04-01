@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 
 interface Lesson {
   id: string;
@@ -45,6 +45,29 @@ export default function LessonPlayer({
   const [completedSet, setCompletedSet] = useState(
     new Set(completedLessonIds)
   );
+  const [showVideo, setShowVideo] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const savedTimeRef = useRef<number>(0);
+
+  const handleCloseVideo = useCallback(() => {
+    if (videoRef.current) {
+      savedTimeRef.current = videoRef.current.currentTime;
+      videoRef.current.pause();
+    }
+    setShowVideo(false);
+  }, []);
+
+  const handleResumeVideo = useCallback(() => {
+    setShowVideo(true);
+  }, []);
+
+  const handleVideoLoaded = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && savedTimeRef.current > 0) {
+      el.currentTime = savedTimeRef.current;
+      el.play().catch(() => {});
+    }
+  }, []);
 
   const markComplete = async () => {
     await fetch(`/api/student/progress/${currentLesson.id}`, {
@@ -81,27 +104,54 @@ export default function LessonPlayer({
       {/* Video + Controls */}
       <div className="flex-1 flex flex-col">
         {/* Video */}
-        <div className="bg-black aspect-video w-full">
-          {currentLesson.videoUrl ? (
-            isDirectVideo(currentLesson.videoUrl) ? (
-              <video
-                src={currentLesson.videoUrl}
-                controls
-                className="w-full h-full"
-                controlsList="nodownload"
-              />
-            ) : (
-              <iframe
-                src={getEmbedUrl(currentLesson.videoUrl)}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="origin"
-                allowFullScreen
-              />
-            )
-          ) : (
+        <div className="bg-black aspect-video w-full relative">
+          {showVideo && currentLesson.videoUrl ? (
+            <>
+              {isDirectVideo(currentLesson.videoUrl) ? (
+                <video
+                  ref={handleVideoLoaded}
+                  src={currentLesson.videoUrl}
+                  controls
+                  className="w-full h-full"
+                  controlsList="nodownload"
+                />
+              ) : (
+                <iframe
+                  src={getEmbedUrl(currentLesson.videoUrl)}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="origin"
+                  allowFullScreen
+                />
+              )}
+              {/* Cancel / Close Video Button */}
+              <button
+                onClick={handleCloseVideo}
+                className="absolute top-3 right-3 w-9 h-9 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-colors z-10"
+                title="Close video"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </>
+          ) : !currentLesson.videoUrl ? (
             <div className="w-full h-full flex items-center justify-center text-white/50">
               No video uploaded for this lesson
+            </div>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+              <p className="text-white/50">Video closed</p>
+              <button
+                onClick={handleResumeVideo}
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition text-sm font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Resume Video
+              </button>
             </div>
           )}
         </div>
@@ -114,6 +164,16 @@ export default function LessonPlayer({
           <h1 className="text-xl font-bold mt-1">{currentLesson.title}</h1>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Link
+              href={`/courses/${course.slug}`}
+              className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition group"
+            >
+              <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </Link>
+
             {!completed ? (
               <button
                 onClick={markComplete}
@@ -165,9 +225,12 @@ export default function LessonPlayer({
         <div className="p-4 border-b border-border">
           <Link
             href={`/courses/${course.slug}`}
-            className="text-sm text-primary hover:underline"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition group"
           >
-            &larr; Back to course
+            <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to course
           </Link>
           <h2 className="font-semibold mt-2">{course.title}</h2>
           <div className="mt-2">
