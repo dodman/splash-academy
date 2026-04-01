@@ -35,6 +35,7 @@ export default async function CourseDetailPage({
 
   const session = await auth();
   let isEnrolled = false;
+  let lastLessonId: string | null = null;
 
   if (session?.user?.id) {
     const enrollment = await db.enrollment.findUnique({
@@ -46,6 +47,19 @@ export default async function CourseDetailPage({
       },
     });
     isEnrolled = !!enrollment;
+
+    if (isEnrolled) {
+      // Find the last lesson the student viewed
+      const lastProgress = await db.progress.findFirst({
+        where: {
+          userId: session.user.id,
+          lesson: { section: { courseId: course.id } },
+        },
+        orderBy: { completedAt: "desc" },
+        select: { lessonId: true },
+      });
+      lastLessonId = lastProgress?.lessonId || null;
+    }
   }
 
   const totalLessons = course.sections.reduce(
@@ -118,41 +132,57 @@ export default async function CourseDetailPage({
                     {section.title}
                   </div>
                   <div className="divide-y divide-border">
-                    {section.lessons.map((lesson) => (
-                      <div
-                        key={lesson.id}
-                        className="px-4 py-3 flex justify-between items-center text-sm"
-                      >
-                        <span className="flex items-center gap-2">
-                          <svg
-                            className="w-4 h-4 text-muted-foreground"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          {lesson.title}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {lesson.isFree && (
-                            <span className="text-success mr-2">Free</span>
-                          )}
-                          {Math.ceil(lesson.duration / 60)} min
-                        </span>
-                      </div>
-                    ))}
+                    {section.lessons.map((lesson) => {
+                      const lessonContent = (
+                        <>
+                          <span className="flex items-center gap-2">
+                            <svg
+                              className="w-4 h-4 text-muted-foreground flex-shrink-0"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            {lesson.title}
+                          </span>
+                          <span className="text-muted-foreground flex-shrink-0">
+                            {lesson.isFree && (
+                              <span className="text-success mr-2">Free</span>
+                            )}
+                            {Math.ceil(lesson.duration / 60)} min
+                          </span>
+                        </>
+                      );
+
+                      return isEnrolled ? (
+                        <Link
+                          key={lesson.id}
+                          href={`/courses/${course.slug}/learn/${lesson.id}`}
+                          className="px-4 py-3 flex justify-between items-center text-sm hover:bg-primary/5 transition cursor-pointer group"
+                        >
+                          {lessonContent}
+                        </Link>
+                      ) : (
+                        <div
+                          key={lesson.id}
+                          className="px-4 py-3 flex justify-between items-center text-sm"
+                        >
+                          {lessonContent}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -188,7 +218,7 @@ export default async function CourseDetailPage({
 
             {isEnrolled ? (
               <Link
-                href={`/courses/${course.slug}/learn/${course.sections[0]?.lessons[0]?.id || ""}`}
+                href={`/courses/${course.slug}/learn/${lastLessonId || course.sections[0]?.lessons[0]?.id || ""}`}
                 className="mt-4 block w-full bg-success text-white py-3.5 rounded-xl font-semibold text-center hover:opacity-90 hover:shadow-lg transition-all duration-200"
               >
                 Continue Learning
