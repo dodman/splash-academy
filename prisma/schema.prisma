@@ -50,6 +50,7 @@ model User {
   questions   Question[]
   answers     Answer[]
   discussions Discussion[]
+  gpaCourses  GpaCourse[]
 }
 
 // ─── CATEGORIES ──────────────────────────────────────
@@ -229,4 +230,20 @@ model Discussion {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+// ─── GPA CALCULATOR ────────────────────────────────
+
+model GpaCourse {
+  id          String   @id @default(cuid())
+  name        String
+  year        String   // "Year 1", "Year 2", etc.
+  courseType  String   // "Full" or "Half"
+  creditHours Float
+  grade       String   // "A+", "A", "B+", "B", "C+", "C", "D+", "D", "F", etc.
+  gradePoints Float    // calculated: GRADE_MAP[grade]
+  createdAt   DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

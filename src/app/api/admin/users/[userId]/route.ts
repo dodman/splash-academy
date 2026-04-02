@@ -130,8 +130,9 @@ export async function DELETE(
       // Delete favorites & wishlist for this user
       db.favorite.deleteMany({ where: { userId } }),
       db.wishlist.deleteMany({ where: { userId } }),
-      // Delete reports by this user
+      // Delete reports and GPA courses by this user
       db.report.deleteMany({ where: { userId } }),
+      db.gpaCourse.deleteMany({ where: { userId } }),
       // If user is an instructor, clean up their courses' related data
       ...(courseIds.length > 0
         ? [

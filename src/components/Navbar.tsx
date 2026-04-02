@@ -92,6 +92,12 @@ export default function Navbar() {
             >
               Browse Courses
             </Link>
+            <Link
+              href="/gpa"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium"
+            >
+              GPA Calculator
+            </Link>
 
             {user ? (
               <>
@@ -317,6 +323,13 @@ export default function Navbar() {
               onClick={() => setMenuOpen(false)}
             >
               Browse Courses
+            </Link>
+            <Link
+              href="/gpa"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted px-3 py-2.5 rounded-lg transition"
+              onClick={() => setMenuOpen(false)}
+            >
+              GPA Calculator
             </Link>
             {user ? (
               <>

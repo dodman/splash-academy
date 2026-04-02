@@ -28,6 +28,7 @@ export async function DELETE() {
       db.favorite.deleteMany({ where: { userId } }),
       db.wishlist.deleteMany({ where: { userId } }),
       db.report.deleteMany({ where: { userId } }),
+      db.gpaCourse.deleteMany({ where: { userId } }),
       db.user.delete({ where: { id: userId } }),
     ]);
 
