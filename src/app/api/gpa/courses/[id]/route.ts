@@ -21,7 +21,7 @@ export async function PUT(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const { name, year, courseType, creditHours, grade } = await req.json();
+  const { name, year, semester, courseType, creditHours, grade } = await req.json();
 
   const gradePoints = grade ? GRADE_MAP[grade] : undefined;
   if (grade && gradePoints === undefined) {
@@ -31,8 +31,9 @@ export async function PUT(
   const updated = await db.gpaCourse.update({
     where: { id },
     data: {
-      ...(name && { name }),
+      ...(name && { name: String(name).trim() }),
       ...(year && { year }),
+      ...(semester !== undefined && { semester: semester ? String(semester).trim() : null }),
       ...(courseType && { courseType }),
       ...(creditHours && { creditHours: Number(creditHours) }),
       ...(grade && { grade, gradePoints }),

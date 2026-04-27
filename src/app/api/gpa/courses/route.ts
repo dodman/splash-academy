@@ -25,11 +25,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { name, year, courseType, creditHours, grade } = await req.json();
+  const { name, year, semester, courseType, creditHours, grade } = await req.json();
 
   if (!name || !year || !courseType || !creditHours || !grade) {
     return NextResponse.json(
-      { error: "All fields are required" },
+      { error: "Course name, year, type, credit hours and grade are required" },
+      { status: 400 }
+    );
+  }
+
+  if (Number(creditHours) <= 0 || Number(creditHours) > 12) {
+    return NextResponse.json(
+      { error: "Credit hours must be between 0 and 12" },
       { status: 400 }
     );
   }
@@ -42,8 +49,9 @@ export async function POST(req: NextRequest) {
   const course = await db.gpaCourse.create({
     data: {
       userId: session.user.id,
-      name,
+      name: String(name).trim(),
       year,
+      semester: semester ? String(semester).trim() : null,
       courseType,
       creditHours: Number(creditHours),
       grade,

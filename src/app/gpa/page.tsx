@@ -8,11 +8,17 @@ interface GpaCourse {
   id: string;
   name: string;
   year: string;
+  semester?: string | null;
   courseType: string;
   creditHours: number;
   grade: string;
   gradePoints: number;
   createdAt: string;
+}
+
+interface AiAdvice {
+  answer: string;
+  recommendations: string[];
 }
 
 interface ForecastResult {
@@ -31,9 +37,10 @@ const GRADE_MAP: Record<string, number> = {
 };
 const GRADE_OPTIONS = Object.keys(GRADE_MAP);
 const YEARS = ["Year 1", "Year 2", "Year 3", "Year 4"];
+const SEMESTERS = ["", "Semester 1", "Semester 2"];
 const COURSE_TYPES = ["Full", "Half"];
 
-type Tab = "dashboard" | "add" | "courses" | "forecast";
+type Tab = "dashboard" | "add" | "courses" | "forecast" | "ai";
 
 // ─── Helpers ────────────────────────────────────────
 function calcGPA(courses: GpaCourse[]) {
@@ -85,6 +92,7 @@ export default function GpaCalculatorPage() {
     { key: "add", label: "Add Course", icon: "M12 4v16m8-8H4" },
     { key: "courses", label: "My Courses", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
     { key: "forecast", label: "Forecast", icon: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" },
+    { key: "ai", label: "Ask AI", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
   ];
 
   if (loading) {
@@ -103,9 +111,9 @@ export default function GpaCalculatorPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">GPA Calculator</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">GPA Tracker</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Track your grades and forecast your academic classification
+            Track your grades, forecast your classification, and get AI advice
           </p>
         </div>
         <Link
@@ -159,6 +167,7 @@ export default function GpaCalculatorPage() {
         <CoursesTab courses={courses} onChanged={fetchCourses} />
       )}
       {tab === "forecast" && <ForecastTab courses={courses} />}
+      {tab === "ai" && <AskAiTab courses={courses} />}
     </div>
   );
 }
@@ -254,8 +263,11 @@ function DashboardTab({ courses }: { courses: GpaCourse[] }) {
                 <div className="divide-y divide-border">
                   {yearCourses.map((c) => (
                     <div key={c.id} className="px-4 py-3 flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <span className="font-medium">{c.name}</span>
+                        {c.semester && (
+                          <span className="text-xs text-muted-foreground">{c.semester}</span>
+                        )}
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                           {c.courseType}
                         </span>
@@ -281,6 +293,7 @@ function DashboardTab({ courses }: { courses: GpaCourse[] }) {
 function AddCourseTab({ onAdded }: { onAdded: () => void }) {
   const [name, setName] = useState("");
   const [year, setYear] = useState("Year 1");
+  const [semester, setSemester] = useState("");
   const [courseType, setCourseType] = useState("Full");
   const [creditHours, setCreditHours] = useState("1");
   const [grade, setGrade] = useState("A+");
@@ -301,6 +314,7 @@ function AddCourseTab({ onAdded }: { onAdded: () => void }) {
         body: JSON.stringify({
           name,
           year,
+          semester: semester || null,
           courseType,
           creditHours: Number(creditHours),
           grade,
@@ -378,6 +392,21 @@ function AddCourseTab({ onAdded }: { onAdded: () => void }) {
                 ))}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Semester <span className="text-muted-foreground">(optional)</span>
+            </label>
+            <select
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
+              className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition bg-white"
+            >
+              {SEMESTERS.map((s) => (
+                <option key={s} value={s}>{s || "Not specified"}</option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -696,6 +725,185 @@ function ForecastTab({ courses }: { courses: GpaCourse[] }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Ask AI Tab ─────────────────────────────────────
+function AskAiTab({ courses }: { courses: GpaCourse[] }) {
+  const [question, setQuestion] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [advice, setAdvice] = useState<AiAdvice | null>(null);
+  const [error, setError] = useState("");
+
+  const { gpa, totalCredits } = calcGPA(courses);
+  const classification = getClassification(gpa);
+
+  const handleAsk = async () => {
+    if (!question.trim()) return;
+    setError("");
+    setAdvice(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/gpa/ask-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "AI request failed");
+      }
+      setAdvice(await res.json());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const suggestions = [
+    "Can I still get distinction?",
+    "What grades do I need next semester?",
+    "Which courses are pulling my GPA down?",
+    "Create a study plan based on my weak courses",
+    "How is my academic performance trending?",
+  ];
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-4">
+      {/* Snapshot card */}
+      <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/10">
+        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-2">
+          Your snapshot for AI advice
+        </p>
+        <div className="flex items-center gap-6 flex-wrap">
+          <div>
+            <p className="text-2xl font-bold text-primary">{gpa}</p>
+            <p className="text-xs text-muted-foreground">Cumulative GPA</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold">{totalCredits}</p>
+            <p className="text-xs text-muted-foreground">Total credits</p>
+          </div>
+          <div>
+            <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full ${classification.color}`}>
+              {classification.label}
+            </span>
+            <p className="text-xs text-muted-foreground mt-1">Classification</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold">{courses.length}</p>
+            <p className="text-xs text-muted-foreground">Courses</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-border p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-xl">
+            ✨
+          </div>
+          <div>
+            <h2 className="font-semibold">Ask Splash AI about your GPA</h2>
+            <p className="text-sm text-muted-foreground">
+              Get personalised advice based on your actual grades
+            </p>
+          </div>
+        </div>
+
+        {courses.length === 0 && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-700 text-sm px-4 py-3 rounded-xl mb-4">
+            Add some courses first so the AI has data to advise on.
+          </div>
+        )}
+
+        <textarea
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Type your question here..."
+          rows={3}
+          className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition resize-none text-sm mb-3"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAsk();
+          }}
+        />
+
+        <div className="flex flex-wrap gap-2 mb-4">
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              onClick={() => setQuestion(s)}
+              className="text-xs px-3 py-1.5 border border-border rounded-full hover:bg-muted transition"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={handleAsk}
+          disabled={loading || !question.trim() || courses.length === 0}
+          className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {loading ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Thinking...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Get advice
+            </>
+          )}
+        </button>
+        <p className="text-xs text-muted-foreground text-center mt-2">Ctrl+Enter to send</p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-4 rounded-xl">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
+      {advice && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-border overflow-hidden">
+            <div className="px-6 py-3 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
+              <span className="text-lg">✨</span>
+              <span className="font-semibold text-amber-800">Splash AI says</span>
+            </div>
+            <div className="px-6 py-5 whitespace-pre-wrap leading-relaxed text-sm">
+              {advice.answer}
+            </div>
+          </div>
+
+          {advice.recommendations.length > 0 && (
+            <div className="bg-white rounded-xl border border-border overflow-hidden">
+              <div className="px-6 py-3 border-b border-border">
+                <span className="font-semibold">Recommendations</span>
+              </div>
+              <ul className="divide-y divide-border">
+                {advice.recommendations.map((rec, i) => (
+                  <li key={i} className="px-6 py-3 text-sm flex items-start gap-3">
+                    <span className="w-6 h-6 bg-primary/10 text-primary text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
