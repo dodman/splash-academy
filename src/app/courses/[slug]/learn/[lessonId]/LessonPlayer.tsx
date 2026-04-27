@@ -91,8 +91,7 @@ export default function LessonPlayer({
       /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([^&\s?]+)/
     );
     if (ytMatch) {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      return `https://www.youtube.com/embed/${ytMatch[1]}?origin=${encodeURIComponent(origin)}&rel=0`;
+      return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
     }
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
     if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
@@ -118,9 +117,10 @@ export default function LessonPlayer({
               ) : (
                 <iframe
                   src={getEmbedUrl(currentLesson.videoUrl)}
+                  title={currentLesson.title}
                   className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="origin"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                 />
               )}
