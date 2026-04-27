@@ -2,11 +2,13 @@
 
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -47,7 +49,8 @@ export default function LoginPage() {
       localStorage.removeItem("splash_saved_email");
     }
 
-    router.push("/");
+    // Send the user back to wherever they were trying to go
+    router.push(redirectTo.startsWith("/") ? redirectTo : "/");
     router.refresh();
   };
 
@@ -124,5 +127,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[calc(100vh-4rem)]" />}>
+      <LoginForm />
+    </Suspense>
   );
 }

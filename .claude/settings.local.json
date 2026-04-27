@@ -35,7 +35,18 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(gh repo *)",
-      "Bash(gh api *)"
+      "Bash(gh api *)",
+      "Bash(curl -s -o /tmp/gpa_resp.txt -w \"HTTP %{http_code}\\\\n\" http://localhost:3000/gpa)",
+      "Bash(kill %1)",
+      "Bash(head -30 /tmp/gpa_resp.txt)",
+      "Bash(kill 40721)",
+      "Bash(lsof -ti:3000 -ti:3001 -ti:3003)",
+      "Bash(xargs kill *)",
+      "Bash(curl -s -o /dev/null -w \"Status: %{http_code} → Location: %{redirect_url}\\\\n\" http://localhost:3000/gpa)",
+      "Bash(curl -s -o /dev/null -w \"Status: %{http_code} → Location: %{redirect_url}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"Status: %{http_code}\\\\n\" http://localhost:3000/login)",
+      "Bash(curl -s -w \"\\\\nStatus: %{http_code}\\\\n\" http://localhost:3000/api/gpa/courses)",
+      "Bash(pkill -f \"next start\")"
     ]
   }
 }
