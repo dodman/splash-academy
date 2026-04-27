@@ -50,7 +50,9 @@ model User {
   questions   Question[]
   answers     Answer[]
   discussions Discussion[]
-  gpaCourses  GpaCourse[]
+  gpaCourses        GpaCourse[]
+  uploadedMaterials CourseMaterial[]
+  generatedQuizzes  GeneratedQuiz[]
 }
 
 // ─── CATEGORIES ──────────────────────────────────────
@@ -82,12 +84,14 @@ model Course {
   categoryId   String
   category     Category @relation(fields: [categoryId], references: [id])
 
-  sections    Section[]
-  enrollments Enrollment[]
-  favorites   Favorite[]
-  wishlist    Wishlist[]
-  questions   Question[]
-  discussions Discussion[]
+  sections         Section[]
+  enrollments      Enrollment[]
+  favorites        Favorite[]
+  wishlist         Wishlist[]
+  questions        Question[]
+  discussions      Discussion[]
+  courseMaterials  CourseMaterial[]
+  generatedQuizzes GeneratedQuiz[]
 }
 
 // ─── SECTIONS ────────────────────────────────────────
@@ -246,4 +250,36 @@ model GpaCourse {
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── AI STUDY MATERIALS ────────────────────────────
+
+model CourseMaterial {
+  id            String   @id @default(cuid())
+  courseId      String
+  title         String
+  filename      String
+  fileType      String   // "pdf" | "docx" | "txt" | "text"
+  extractedText String
+  uploadedBy    String
+  createdAt     DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+}
+
+// ─── AI GENERATED QUIZZES ──────────────────────────
+
+model GeneratedQuiz {
+  id           String   @id @default(cuid())
+  courseId     String
+  topic        String?
+  difficulty   String   @default("medium")
+  questionType String   @default("multiple-choice")
+  questions    Json     // array of { question, options?, correctAnswer, explanation }
+  generatedBy  String
+  createdAt    DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [generatedBy], references: [id], onDelete: Cascade)
 }

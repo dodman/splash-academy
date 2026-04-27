@@ -272,7 +272,7 @@ export default function LessonPlayer({
         </div>
 
         {/* Community link */}
-        <div className="px-4 py-2 border-b border-border">
+        <div className="px-4 py-2 border-b border-border space-y-1">
           <Link
             href={`/courses/${course.slug}/learn/community`}
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary bg-primary/5 rounded-lg hover:bg-primary/10 transition"
@@ -281,6 +281,15 @@ export default function LessonPlayer({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             Community &middot; Q&A &middot; Discussion
+          </Link>
+          <Link
+            href={`/courses/${course.slug}/learn/ai-study`}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            ✨ AI Study &middot; Materials &middot; Quizzes
           </Link>
         </div>
 

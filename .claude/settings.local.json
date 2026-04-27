@@ -22,7 +22,20 @@
       "WebFetch(domain:splash-academy.vercel.app)",
       "Bash(node --loader ts-node/esm scripts/update-categories.mts)",
       "Bash(npm ls:*)",
-      "Bash(node -e \"require\\(''dotenv''\\).config\\(\\);:*)"
+      "Bash(node -e \"require\\(''dotenv''\\).config\\(\\);:*)",
+      "Read(//private/tmp/**)",
+      "Bash(find /private/tmp/claude-501 -type f \\\\\\(-name *.png -o -name *.jpg -o -name *.jpeg -o -name *.webp \\\\\\))",
+      "Bash(find /private/tmp -type f \\\\\\(-name *.png -o -name *.jpg -o -name *.jpeg \\\\\\) -mmin -10)",
+      "Bash(npx next:*)",
+      "WebSearch",
+      "Bash(node --input-type=module -e \":*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh repo *)",
+      "Bash(gh api *)"
     ]
   }
 }
