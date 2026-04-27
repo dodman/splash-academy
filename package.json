@@ -33,6 +33,7 @@
     "react-dom": "19.2.4",
     "slugify": "^1.6.8",
     "stripe": "^21.0.1",
+    "unpdf": "^1.6.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

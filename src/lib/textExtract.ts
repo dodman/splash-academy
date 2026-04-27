@@ -34,13 +34,24 @@ export async function extractText(
   let text = "";
 
   if (fileType === "pdf") {
-    // Use require() for CJS compatibility with Turbopack
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require("pdf-parse") as (
-      buf: Buffer
-    ) => Promise<{ text: string; numpages: number }>;
-    const result = await pdfParse(buffer);
-    text = result.text ?? "";
+    // Use unpdf (serverless-friendly). pdf-parse + pdfjs-dist crashes with
+    // "DOMMatrix is not defined" on Vercel's Node.js runtime because pdfjs
+    // expects browser-only DOM APIs.
+    //
+    // unpdf's bundled pdfjs uses Promise.try which only landed in Node 22.5+;
+    // Node 22.20 (and Vercel's 22.x) lacks it. Polyfill before importing.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const P = Promise as any;
+    if (typeof P.try !== "function") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      P.try = (fn: (...args: any[]) => any, ...args: any[]) =>
+        new Promise((resolve) => resolve(fn(...args)));
+    }
+
+    const { extractText: extractPdfText, getDocumentProxy } = await import("unpdf");
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const result = await extractPdfText(pdf, { mergePages: true });
+    text = Array.isArray(result.text) ? result.text.join("\n\n") : result.text ?? "";
   } else if (fileType === "docx") {
     const mammoth = await import("mammoth");
     const result = await mammoth.extractRawText({ buffer });

@@ -102,7 +102,11 @@
       "Bash(curl -s -b /tmp/cookies.txt https://splash-academy-v2.vercel.app/api/auth/session)",
       "Bash(PORT=3010 npm run dev)",
       "Bash(echo \"Started PID $!\")",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3010/login)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3010/login)",
+      "Bash(cp /tmp/test-extract.mjs \"/Users/macbook/Desktop/Splash academy/test-extract.mjs\")",
+      "Bash(node test-extract.mjs)",
+      "Bash(awk 'END{print}' /tmp/extract-out.txt)",
+      "Bash(node -e \"console.log\\('Promise.try:', typeof Promise.try\\)\")"
     ]
   }
 }
