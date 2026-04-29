@@ -53,6 +53,9 @@ model User {
   gpaCourses        GpaCourse[]
   uploadedMaterials CourseMaterial[]
   generatedQuizzes  GeneratedQuiz[]
+  chatSessions      ChatSession[]
+  chatSettings      UserSettings?
+  topicProgress     TopicProgress[]
 }
 
 // ─── CATEGORIES ──────────────────────────────────────
@@ -92,6 +95,8 @@ model Course {
   discussions      Discussion[]
   courseMaterials  CourseMaterial[]
   generatedQuizzes GeneratedQuiz[]
+  chatSessions     ChatSession[]
+  topicProgress    TopicProgress[]
 }
 
 // ─── SECTIONS ────────────────────────────────────────
@@ -268,6 +273,89 @@ model CourseMaterial {
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+}
+
+// ─── AI CHAT ────────────────────────────────────────
+
+enum TutorMode {
+  LEARN
+  PRACTICE
+  REVISION
+  DIRECT
+  GENERAL
+  CODE
+  WRITE
+  RESEARCH
+  BUSINESS
+}
+
+enum StudentLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ResponseLength {
+  CONCISE
+  NORMAL
+  DETAILED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model ChatSession {
+  id              String    @id @default(cuid())
+  userId          String
+  courseId        String?
+  mode            TutorMode @default(GENERAL)
+  title           String    @default("New chat")
+  totalTokensUsed Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course?     @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id         String      @id @default(cuid())
+  sessionId  String
+  role       MessageRole
+  content    String
+  citations  Json?
+  tokensUsed Int?
+  createdAt  DateTime    @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model UserSettings {
+  id              String         @id @default(cuid())
+  userId          String         @unique
+  level           StudentLevel   @default(INTERMEDIATE)
+  preferredLength ResponseLength @default(NORMAL)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TopicProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String?
+  topic     String
+  mastery   Float    @default(0.0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, courseId, topic])
 }
 
 // ─── AI GENERATED QUIZZES ──────────────────────────

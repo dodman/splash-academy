@@ -98,6 +98,15 @@ export default function Navbar() {
             >
               GPA Tracker
             </Link>
+            <Link
+              href="/ai"
+              className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-semibold"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Splash AI
+            </Link>
 
             {user ? (
               <>
@@ -330,6 +339,16 @@ export default function Navbar() {
               onClick={() => setMenuOpen(false)}
             >
               GPA Tracker
+            </Link>
+            <Link
+              href="/ai"
+              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-3 py-2.5 rounded-lg transition font-semibold"
+              onClick={() => setMenuOpen(false)}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Splash AI
             </Link>
             {user ? (
               <>
