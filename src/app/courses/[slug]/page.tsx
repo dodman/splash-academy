@@ -49,16 +49,24 @@ export default async function CourseDetailPage({
     isEnrolled = !!enrollment;
 
     if (isEnrolled) {
-      // Find the last lesson the student viewed
-      const lastProgress = await db.progress.findFirst({
+      // Find the first lesson the student has NOT yet completed — that is
+      // where they should resume. Fall back to the very last lesson if all
+      // are done (so they can review), or null if the course has no lessons.
+      const completedRows = await db.progress.findMany({
         where: {
           userId: session.user.id,
           lesson: { section: { courseId: course.id } },
+          completed: true,
         },
-        orderBy: { completedAt: "desc" },
         select: { lessonId: true },
       });
-      lastLessonId = lastProgress?.lessonId || null;
+      const completedIds = new Set(completedRows.map((p) => p.lessonId));
+      const allLessons = course.sections.flatMap((s) => s.lessons);
+      const resumeLesson =
+        allLessons.find((l) => !completedIds.has(l.id)) ??
+        allLessons[allLessons.length - 1] ??
+        null;
+      lastLessonId = resumeLesson?.id ?? null;
     }
   }
 
@@ -222,13 +230,13 @@ export default async function CourseDetailPage({
                   href={`/courses/${course.slug}/learn/${lastLessonId || course.sections[0]?.lessons[0]?.id || ""}`}
                   className="mt-4 block w-full bg-success text-white py-3.5 rounded-xl font-semibold text-center hover:opacity-90 hover:shadow-lg transition-all duration-200"
                 >
-                  Continue Learning
+                  {lastLessonId ? "Continue Learning" : "Start Learning"}
                 </Link>
                 <Link
                   href={`/courses/${course.slug}/learn/ai-study`}
                   className="mt-2 block w-full border border-amber-300 bg-amber-50 text-amber-800 py-2.5 rounded-xl font-medium text-sm text-center hover:bg-amber-100 transition-all duration-200 flex items-center justify-center gap-2"
                 >
-                  <span>✨</span> AI Study &mdash; Materials &amp; Quizzes
+                  <span>✨</span> AI Study
                 </Link>
               </>
             ) : (
