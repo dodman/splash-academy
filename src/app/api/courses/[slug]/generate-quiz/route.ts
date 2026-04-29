@@ -50,26 +50,29 @@ export async function POST(
 
   const materials = await db.courseMaterial.findMany({
     where: whereClause,
-    select: { extractedText: true, title: true },
+    select: { id: true, title: true, filename: true, extractedText: true },
     take: 5,
   });
 
-  const materialTexts = materials.map(
-    (m) => `[${m.title}]\n${m.extractedText}`
-  );
+  const richMaterials = materials.map((m) => ({
+    id: m.id,
+    title: m.title,
+    filename: m.filename,
+    text: m.extractedText,
+  }));
 
   try {
     const res = await fetch(`${SPLASH_AI_URL}/api/academy/generate-quiz`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-academy-key": SPLASH_AI_KEY,
+        "Authorization": `Bearer ${SPLASH_AI_KEY}`,
       },
       body: JSON.stringify({
         courseId: course.id,
         courseName: course.title,
         topic: topic || undefined,
-        materials: materialTexts,
+        materials: richMaterials,
         numberOfQuestions: numberOfQuestions ?? 5,
         difficulty: difficulty ?? "medium",
         questionType: questionType ?? "multiple-choice",

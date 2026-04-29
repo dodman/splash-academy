@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-academy-key": SPLASH_AI_KEY,
+        "Authorization": `Bearer ${SPLASH_AI_KEY}`,
       },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(55_000),

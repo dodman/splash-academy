@@ -217,12 +217,20 @@ export default async function CourseDetailPage({
             </p>
 
             {isEnrolled ? (
-              <Link
-                href={`/courses/${course.slug}/learn/${lastLessonId || course.sections[0]?.lessons[0]?.id || ""}`}
-                className="mt-4 block w-full bg-success text-white py-3.5 rounded-xl font-semibold text-center hover:opacity-90 hover:shadow-lg transition-all duration-200"
-              >
-                Continue Learning
-              </Link>
+              <>
+                <Link
+                  href={`/courses/${course.slug}/learn/${lastLessonId || course.sections[0]?.lessons[0]?.id || ""}`}
+                  className="mt-4 block w-full bg-success text-white py-3.5 rounded-xl font-semibold text-center hover:opacity-90 hover:shadow-lg transition-all duration-200"
+                >
+                  Continue Learning
+                </Link>
+                <Link
+                  href={`/courses/${course.slug}/learn/ai-study`}
+                  className="mt-2 block w-full border border-amber-300 bg-amber-50 text-amber-800 py-2.5 rounded-xl font-medium text-sm text-center hover:bg-amber-100 transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <span>✨</span> AI Study &mdash; Materials &amp; Quizzes
+                </Link>
+              </>
             ) : (
               <EnrollButton courseId={course.id} price={course.price} />
             )}

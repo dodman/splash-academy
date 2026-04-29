@@ -32,7 +32,7 @@ interface SavedQuiz {
   user: { name: string };
 }
 
-type Tab = "materials" | "ask" | "quizzes";
+type Tab = "materials" | "ask" | "quizzes" | "summaries";
 
 // ─── Page ───────────────────────────────────────────
 
@@ -68,6 +68,11 @@ export default function AiStudyPage() {
       label: "Generate Quiz",
       icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
     },
+    {
+      key: "summaries",
+      label: "Summaries",
+      icon: "M4 6h16M4 12h16M4 18h7",
+    },
   ];
 
   return (
@@ -88,7 +93,7 @@ export default function AiStudyPage() {
             <span className="text-2xl">✨</span> AI Study Assistant
           </h1>
           <p className="text-sm text-muted-foreground">
-            Upload materials, ask questions, and generate quizzes powered by Splash AI
+            Upload materials, ask questions, generate quizzes, and get smart summaries powered by Splash AI
           </p>
         </div>
       </div>
@@ -126,6 +131,9 @@ export default function AiStudyPage() {
       )}
       {tab === "quizzes" && (
         <QuizzesTab slug={slug} materials={materials} />
+      )}
+      {tab === "summaries" && (
+        <SummariesTab slug={slug} materials={materials} />
       )}
     </div>
   );
@@ -380,6 +388,7 @@ function AskAiTab({
     answer: string;
     sourceUsed: boolean;
     message: string;
+    citations?: { materialId?: string; title?: string; filename?: string }[];
   } | null>(null);
   const [error, setError] = useState("");
 
@@ -533,6 +542,24 @@ function AskAiTab({
             <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap leading-relaxed">
               {answer.answer}
             </div>
+
+            {/* Citations */}
+            {answer.citations && answer.citations.length > 0 && (
+              <div className="mt-4 border-t border-border pt-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Sources used:</p>
+                <div className="flex flex-wrap gap-2">
+                  {answer.citations.map((c, i) => (
+                    <span
+                      key={i}
+                      className="text-xs bg-primary/5 text-primary border border-primary/20 px-2 py-0.5 rounded-full"
+                    >
+                      {c.title || c.filename || "Material"}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground mt-4 border-t border-border pt-3">
               {answer.message}
             </p>
@@ -937,3 +964,253 @@ function QuizzesTab({
   );
 }
 
+// ─── Summaries Tab ───────────────────────────────────
+
+interface SummaryResult {
+  summary: string;
+  keyPoints: string[];
+  possibleExamQuestions: string[];
+}
+
+function SummariesTab({
+  slug,
+  materials,
+}: {
+  slug: string;
+  materials: Material[];
+}) {
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string>("all");
+  const [summaryType, setSummaryType] = useState<"short" | "detailed" | "revision-notes">("short");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<SummaryResult | null>(null);
+  const [generatedFor, setGeneratedFor] = useState<{ label: string; type: string } | null>(null);
+
+  const summaryTypeLabels: Record<string, string> = {
+    short: "Quick Overview",
+    detailed: "Detailed Breakdown",
+    "revision-notes": "Revision Notes",
+  };
+
+  const summaryTypeDescriptions: Record<string, string> = {
+    short: "150–250 word executive summary of the material",
+    detailed: "Thorough section-by-section breakdown of all concepts",
+    "revision-notes": "Bullet-point exam-ready notes with key facts and definitions",
+  };
+
+  const handleGenerate = async () => {
+    if (materials.length === 0) return;
+    setError("");
+    setResult(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch(`/api/courses/${slug}/summarize-material`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          materialId: selectedMaterialId === "all" ? undefined : selectedMaterialId,
+          summaryType,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Summary generation failed");
+      }
+
+      const data = await res.json();
+      setResult(data);
+
+      const selectedLabel =
+        selectedMaterialId === "all"
+          ? `All ${materials.length} materials`
+          : materials.find((m) => m.id === selectedMaterialId)?.title ?? "Selected material";
+
+      setGeneratedFor({ label: selectedLabel, type: summaryTypeLabels[summaryType] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (materials.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-border p-12 text-center text-muted-foreground">
+        <div className="text-4xl mb-3">📄</div>
+        <p className="font-medium">No materials uploaded yet</p>
+        <p className="text-sm mt-1">
+          Upload materials in the{" "}
+          <button
+            className="text-primary hover:underline"
+            onClick={() => {
+              /* parent controls tab; user can click Course Materials tab */
+            }}
+          >
+            Course Materials
+          </button>{" "}
+          tab first, then come back here to generate summaries.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Config panel */}
+      <div className="bg-white rounded-xl border border-border p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-xl">
+            📋
+          </div>
+          <div>
+            <h2 className="font-semibold">Summarise Material</h2>
+            <p className="text-sm text-muted-foreground">
+              Let Splash AI create study-ready notes from your uploaded materials
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Material selector */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Material to summarise</label>
+            <select
+              value={selectedMaterialId}
+              onChange={(e) => setSelectedMaterialId(e.target.value)}
+              className="w-full px-4 py-2.5 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition bg-white"
+            >
+              <option value="all">All materials ({materials.length})</option>
+              {materials.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Summary type */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Summary style</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {(["short", "detailed", "revision-notes"] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setSummaryType(type)}
+                  className={`p-3 rounded-xl border text-left transition ${
+                    summaryType === type
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                >
+                  <p className="text-sm font-medium">{summaryTypeLabels[type]}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                    {summaryTypeDescriptions[type]}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Splash AI is summarising...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Generate Summary
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Result */}
+      {result && generatedFor && (
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="bg-white rounded-xl border border-border overflow-hidden">
+            <div className="px-6 py-4 bg-primary/5 border-b border-border flex items-center gap-2 flex-wrap">
+              <span className="text-lg">📋</span>
+              <span className="font-semibold text-primary">{generatedFor.type}</span>
+              <span className="text-xs text-muted-foreground">—</span>
+              <span className="text-xs text-muted-foreground">{generatedFor.label}</span>
+            </div>
+
+            {/* Summary */}
+            <div className="px-6 py-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                Summary
+              </h3>
+              <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap leading-relaxed">
+                {result.summary}
+              </div>
+            </div>
+          </div>
+
+          {/* Key Points */}
+          <div className="bg-white rounded-xl border border-border overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="font-semibold flex items-center gap-2">
+                <span className="text-primary">🔑</span> Key Points
+              </h3>
+            </div>
+            <ul className="px-6 py-4 space-y-2">
+              {result.keyPoints.map((point, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="w-5 h-5 bg-primary/10 text-primary text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm leading-relaxed">{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Possible Exam Questions */}
+          <div className="bg-white rounded-xl border border-border overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="font-semibold flex items-center gap-2">
+                <span className="text-amber-500">🎓</span> Possible Exam Questions
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Questions Splash AI thinks could appear in an assessment based on this material
+              </p>
+            </div>
+            <ul className="px-6 py-4 space-y-3">
+              {result.possibleExamQuestions.map((q, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="text-amber-500 flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </span>
+                  <span className="text-sm leading-relaxed">{q}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
