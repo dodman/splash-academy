@@ -572,6 +572,371 @@ function AskAiTab({
 
 // ─── Quizzes Tab ─────────────────────────────────────
 
+// ─── Interactive Quiz Player ─────────────────────────
+
+interface ActiveQuiz {
+  questions: QuizQuestion[];
+  topic?: string | null;
+  difficulty: string;
+  questionType: string;
+}
+
+function QuizPlayer({
+  quiz,
+  onBack,
+}: {
+  quiz: ActiveQuiz;
+  onBack: () => void;
+}) {
+  const { questions, topic, difficulty, questionType } = quiz;
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [selected, setSelected] = useState<Record<number, string>>({});
+  const [submitted, setSubmitted] = useState<Set<number>>(new Set());
+  const [done, setDone] = useState(false);
+
+  const current = questions[currentIdx];
+  const isSubmitted = submitted.has(currentIdx);
+  const chosenAnswer = selected[currentIdx];
+  const isCorrect = chosenAnswer === current.correctAnswer;
+  const isShortAnswer = questionType === "short-answer" || !current.options;
+
+  const score = questions.filter(
+    (q, i) => submitted.has(i) && selected[i] === q.correctAnswer
+  ).length;
+
+  const progressPct = ((currentIdx + 1) / questions.length) * 100;
+
+  const difficultyBadge: Record<string, string> = {
+    easy: "bg-green-100 text-green-700",
+    medium: "bg-amber-100 text-amber-700",
+    hard: "bg-red-100 text-red-700",
+  };
+
+  const handleSelect = (opt: string) => {
+    if (isSubmitted) return;
+    setSelected((prev) => ({ ...prev, [currentIdx]: opt }));
+  };
+
+  const handleSubmit = () => {
+    if (!isShortAnswer && !chosenAnswer) return;
+    setSubmitted((prev) => new Set([...prev, currentIdx]));
+  };
+
+  const handleNext = () => {
+    if (currentIdx < questions.length - 1) {
+      setCurrentIdx((i) => i + 1);
+    } else {
+      setDone(true);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentIdx > 0) setCurrentIdx((i) => i - 1);
+  };
+
+  const handleRestart = () => {
+    setCurrentIdx(0);
+    setSelected({});
+    setSubmitted(new Set());
+    setDone(false);
+  };
+
+  // ── Results screen ──────────────────────────────────
+  if (done) {
+    const total = isShortAnswer ? questions.length : questions.length;
+    const pct = isShortAnswer ? null : Math.round((score / total) * 100);
+    const grade =
+      pct === null
+        ? null
+        : pct >= 80
+        ? { label: "Excellent!", color: "text-green-600", emoji: "🎉" }
+        : pct >= 60
+        ? { label: "Good job!", color: "text-amber-600", emoji: "👍" }
+        : { label: "Keep practising", color: "text-red-600", emoji: "📚" };
+
+    return (
+      <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className="px-6 py-5 bg-primary/5 border-b border-border flex items-center gap-3">
+          <button onClick={onBack} className="text-muted-foreground hover:text-foreground transition">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="font-semibold">Quiz complete</span>
+        </div>
+
+        <div className="px-6 py-10 text-center">
+          {grade ? (
+            <>
+              <div className="text-5xl mb-3">{grade.emoji}</div>
+              <p className={`text-3xl font-bold mb-1 ${grade.color}`}>{pct}%</p>
+              <p className="text-lg font-semibold mb-1">{grade.label}</p>
+              <p className="text-muted-foreground text-sm mb-8">
+                You got {score} out of {total} questions correct
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="text-5xl mb-3">✅</div>
+              <p className="text-lg font-semibold mb-1">Quiz complete</p>
+              <p className="text-muted-foreground text-sm mb-8">
+                Review the answers below and check your self-assessment
+              </p>
+            </>
+          )}
+
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={handleRestart}
+              className="px-6 py-2.5 bg-primary text-white rounded-xl font-semibold hover:opacity-90 transition"
+            >
+              Try again
+            </button>
+            <button
+              onClick={onBack}
+              className="px-6 py-2.5 border border-border rounded-xl font-medium hover:bg-muted transition"
+            >
+              Back to generator
+            </button>
+          </div>
+        </div>
+
+        {/* Answer review */}
+        <div className="border-t border-border divide-y divide-border">
+          {questions.map((q, i) => {
+            const userAns = selected[i];
+            const correct = userAns === q.correctAnswer;
+            return (
+              <div key={i} className="px-6 py-4">
+                <div className="flex items-start gap-3 mb-2">
+                  <span
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 ${
+                      isShortAnswer
+                        ? "bg-muted text-muted-foreground"
+                        : correct
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {isShortAnswer ? i + 1 : correct ? "✓" : "✗"}
+                  </span>
+                  <p className="text-sm font-medium leading-relaxed">{q.question}</p>
+                </div>
+                <div className="ml-9 space-y-1 text-xs">
+                  {!isShortAnswer && userAns && userAns !== q.correctAnswer && (
+                    <p className="text-red-600">Your answer: {userAns}</p>
+                  )}
+                  <p className="text-green-700 font-medium">
+                    {isShortAnswer ? "Answer: " : "Correct: "}
+                    {q.correctAnswer}
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed pt-1">{q.explanation}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Active question ─────────────────────────────────
+  return (
+    <div className="bg-white rounded-xl border border-border overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-border">
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={onBack}
+            className="text-sm text-muted-foreground hover:text-foreground transition flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Exit quiz
+          </button>
+          <div className="flex items-center gap-2">
+            {topic && (
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                {topic}
+              </span>
+            )}
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                difficultyBadge[difficulty] ?? "bg-muted text-muted-foreground"
+              }`}
+            >
+              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+            </span>
+            {!isShortAnswer && (
+              <span className="text-xs text-muted-foreground">
+                {score} / {submitted.size} correct
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-300"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {currentIdx + 1} / {questions.length}
+          </span>
+        </div>
+      </div>
+
+      {/* Question */}
+      <div className="px-6 py-6">
+        <p className="text-base font-semibold leading-relaxed mb-5">{current.question}</p>
+
+        {/* Options (MCQ / True-False) */}
+        {current.options && (
+          <div className="space-y-2.5">
+            {current.options.map((opt) => {
+              const isSelected = chosenAnswer === opt;
+              const isAnswer = opt === current.correctAnswer;
+
+              let optClass =
+                "w-full text-left px-4 py-3.5 rounded-xl border text-sm transition-all flex items-center gap-3 ";
+
+              if (!isSubmitted) {
+                optClass += isSelected
+                  ? "border-primary bg-primary/5 font-medium"
+                  : "border-border hover:border-primary/50 hover:bg-muted/40";
+              } else {
+                if (isAnswer) {
+                  optClass += "border-green-400 bg-green-50 text-green-800 font-medium";
+                } else if (isSelected && !isAnswer) {
+                  optClass += "border-red-400 bg-red-50 text-red-800";
+                } else {
+                  optClass += "border-border text-muted-foreground";
+                }
+              }
+
+              return (
+                <button key={opt} className={optClass} onClick={() => handleSelect(opt)}>
+                  {/* Radio indicator */}
+                  <span
+                    className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                      isSubmitted && isAnswer
+                        ? "border-green-500 bg-green-500"
+                        : isSubmitted && isSelected && !isAnswer
+                        ? "border-red-500 bg-red-500"
+                        : isSelected
+                        ? "border-primary bg-primary"
+                        : "border-muted-foreground/30"
+                    }`}
+                  >
+                    {isSubmitted && isAnswer && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                    {isSubmitted && isSelected && !isAnswer && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                    {!isSubmitted && isSelected && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-white" />
+                    )}
+                  </span>
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Short answer — just show the answer after submit */}
+        {isShortAnswer && (
+          <div className="bg-muted/40 rounded-xl px-4 py-3 text-sm text-muted-foreground italic">
+            Short answer — check your response against the model answer below.
+          </div>
+        )}
+
+        {/* Feedback after submit */}
+        {isSubmitted && (
+          <div className="mt-4 space-y-2">
+            {!isShortAnswer && (
+              <div
+                className={`flex items-center gap-2 text-sm font-semibold ${
+                  isCorrect ? "text-green-700" : "text-red-700"
+                }`}
+              >
+                {isCorrect ? (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Correct!
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Incorrect — correct answer: {current.correctAnswer}
+                  </>
+                )}
+              </div>
+            )}
+            {isShortAnswer && (
+              <div className="bg-green-50 border border-green-200 text-green-800 text-sm px-4 py-3 rounded-xl">
+                <strong>Model answer:</strong> {current.correctAnswer}
+              </div>
+            )}
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm px-4 py-3 rounded-xl leading-relaxed">
+              <strong>Explanation:</strong> {current.explanation}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="px-6 py-4 border-t border-border flex items-center justify-between gap-3">
+        <button
+          onClick={handlePrev}
+          disabled={currentIdx === 0}
+          className="flex items-center gap-2 px-4 py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Previous
+        </button>
+
+        {!isSubmitted ? (
+          <button
+            onClick={isShortAnswer ? handleSubmit : handleSubmit}
+            disabled={!isShortAnswer && !chosenAnswer}
+            className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isShortAnswer ? "Reveal answer" : "Submit"}
+          </button>
+        ) : (
+          <button
+            onClick={handleNext}
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition"
+          >
+            {currentIdx < questions.length - 1 ? "Next" : "See results"}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Quizzes Tab ─────────────────────────────────────
+
 function QuizzesTab({
   slug,
   materials,
@@ -586,11 +951,11 @@ function QuizzesTab({
   const [useMaterials, setUseMaterials] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [quiz, setQuiz] = useState<QuizQuestion[] | null>(null);
+  const [activeQuiz, setActiveQuiz] = useState<ActiveQuiz | null>(null);
+
   const [savedQuizzes, setSavedQuizzes] = useState<SavedQuiz[]>([]);
   const [showSaved, setShowSaved] = useState(false);
   const [loadingSaved, setLoadingSaved] = useState(false);
-  const [revealed, setRevealed] = useState<Set<number>>(new Set());
 
   const fetchSaved = useCallback(async () => {
     setLoadingSaved(true);
@@ -602,8 +967,7 @@ function QuizzesTab({
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setQuiz(null);
-    setRevealed(new Set());
+    setActiveQuiz(null);
     setLoading(true);
 
     try {
@@ -625,7 +989,12 @@ function QuizzesTab({
       }
 
       const data = await res.json();
-      setQuiz(data.quiz);
+      setActiveQuiz({
+        questions: data.quiz,
+        topic: topic || null,
+        difficulty,
+        questionType,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -633,28 +1002,31 @@ function QuizzesTab({
     }
   };
 
-  const toggleReveal = (i: number) => {
-    setRevealed((prev) => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
-  };
-
-  const difficultyColors: Record<string, string> = {
-    easy: "text-green-600 bg-green-50",
-    medium: "text-amber-600 bg-amber-50",
-    hard: "text-red-600 bg-red-50",
-  };
-
-  const [savedViewIndex, setSavedViewIndex] = useState<number | null>(null);
-  const [savedRevealed, setSavedRevealed] = useState<Set<number>>(new Set());
+  // Show the interactive player when a quiz is active
+  if (activeQuiz) {
+    return (
+      <QuizPlayer
+        quiz={activeQuiz}
+        onBack={() => setActiveQuiz(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Generate Form */}
       <div className="bg-white rounded-xl border border-border p-6">
-        <h2 className="font-semibold mb-4">Generate a Quiz</h2>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-xl">
+            🎯
+          </div>
+          <div>
+            <h2 className="font-semibold">Generate a Quiz</h2>
+            <p className="text-sm text-muted-foreground">
+              AI-generated questions from your uploaded materials
+            </p>
+          </div>
+        </div>
 
         {materials.length > 0 && (
           <label className="flex items-center gap-3 mb-4 cursor-pointer">
@@ -666,9 +1038,7 @@ function QuizzesTab({
                 className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${useMaterials ? "left-7" : "left-1"}`}
               />
             </div>
-            <span className="text-sm">
-              Base quiz on uploaded materials
-            </span>
+            <span className="text-sm">Base quiz on uploaded materials</span>
           </label>
         )}
 
@@ -751,94 +1121,16 @@ function QuizzesTab({
                 Generating quiz...
               </>
             ) : (
-              "Generate Quiz"
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Generate Quiz
+              </>
             )}
           </button>
         </form>
       </div>
-
-      {/* Generated Quiz */}
-      {quiz && (
-        <div className="bg-white rounded-xl border border-border overflow-hidden">
-          <div className="px-6 py-4 bg-primary/5 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🎯</span>
-              <span className="font-semibold">Generated Quiz</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${difficultyColors[difficulty]}`}>
-                {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setRevealed(new Set(quiz.map((_, i) => i)))}
-                className="text-xs px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition"
-              >
-                Show all answers
-              </button>
-              <button
-                onClick={() => setRevealed(new Set())}
-                className="text-xs px-3 py-1.5 border border-border rounded-lg hover:bg-muted transition"
-              >
-                Hide all
-              </button>
-            </div>
-          </div>
-
-          <div className="divide-y divide-border">
-            {quiz.map((q, i) => (
-              <div key={i} className="px-6 py-5">
-                <div className="flex items-start gap-3 mb-3">
-                  <span className="w-7 h-7 bg-primary/10 text-primary text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <p className="font-medium leading-relaxed">{q.question}</p>
-                </div>
-
-                {/* Options for MCQ / True-False */}
-                {q.options && (
-                  <div className="ml-10 grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                    {q.options.map((opt, j) => (
-                      <div
-                        key={j}
-                        className={`px-4 py-2.5 rounded-lg text-sm border transition ${
-                          revealed.has(i) && opt === q.correctAnswer
-                            ? "bg-green-50 border-green-400 text-green-800 font-medium"
-                            : "border-border"
-                        }`}
-                      >
-                        {opt}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Reveal button */}
-                <div className="ml-10">
-                  <button
-                    onClick={() => toggleReveal(i)}
-                    className="text-sm text-primary hover:underline font-medium"
-                  >
-                    {revealed.has(i) ? "Hide answer" : "Show answer"}
-                  </button>
-
-                  {revealed.has(i) && (
-                    <div className="mt-3 space-y-2">
-                      {!q.options && (
-                        <div className="bg-green-50 border border-green-200 text-green-800 text-sm px-4 py-3 rounded-xl">
-                          <strong>Answer:</strong> {q.correctAnswer}
-                        </div>
-                      )}
-                      <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm px-4 py-3 rounded-xl">
-                        <strong>Explanation:</strong> {q.explanation}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Past Quizzes */}
       <div className="bg-white rounded-xl border border-border overflow-hidden">
@@ -861,100 +1153,43 @@ function QuizzesTab({
               <div className="px-6 py-8 text-center text-muted-foreground animate-pulse">Loading...</div>
             ) : savedQuizzes.length === 0 ? (
               <div className="px-6 py-8 text-center text-muted-foreground">No saved quizzes yet</div>
-            ) : savedViewIndex === null ? (
+            ) : (
               <div className="divide-y divide-border">
-                {savedQuizzes.map((sq, i) => (
+                {savedQuizzes.map((sq) => (
                   <div
                     key={sq.id}
-                    className="px-6 py-4 flex items-center justify-between hover:bg-muted/30 cursor-pointer transition"
-                    onClick={() => {
-                      setSavedViewIndex(i);
-                      setSavedRevealed(new Set());
-                    }}
+                    className="px-6 py-4 flex items-center justify-between hover:bg-muted/30 cursor-pointer transition group"
+                    onClick={() =>
+                      setActiveQuiz({
+                        questions: sq.questions as QuizQuestion[],
+                        topic: sq.topic,
+                        difficulty: sq.difficulty,
+                        questionType: sq.questionType,
+                      })
+                    }
                   >
                     <div>
-                      <p className="font-medium text-sm">
-                        {sq.topic ?? "General quiz"} —{" "}
-                        <span className="text-muted-foreground">
-                          {(sq.questions as QuizQuestion[]).length} questions
+                      <p className="font-medium text-sm group-hover:text-primary transition">
+                        {sq.topic ?? "General quiz"}{" "}
+                        <span className="text-muted-foreground font-normal">
+                          — {(sq.questions as QuizQuestion[]).length} questions
                         </span>
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {sq.difficulty} &middot; {sq.questionType} &middot;{" "}
                         {new Date(sq.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition">
+                        Play
+                      </span>
+                      <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
                   </div>
                 ))}
-              </div>
-            ) : (
-              <div>
-                <button
-                  onClick={() => setSavedViewIndex(null)}
-                  className="mx-6 mt-4 text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to list
-                </button>
-                <div className="divide-y divide-border mt-2">
-                  {(savedQuizzes[savedViewIndex].questions as QuizQuestion[]).map((q, i) => (
-                    <div key={i} className="px-6 py-5">
-                      <div className="flex items-start gap-3 mb-3">
-                        <span className="w-7 h-7 bg-primary/10 text-primary text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          {i + 1}
-                        </span>
-                        <p className="font-medium leading-relaxed">{q.question}</p>
-                      </div>
-                      {q.options && (
-                        <div className="ml-10 grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                          {q.options.map((opt, j) => (
-                            <div
-                              key={j}
-                              className={`px-4 py-2.5 rounded-lg text-sm border ${
-                                savedRevealed.has(i) && opt === q.correctAnswer
-                                  ? "bg-green-50 border-green-400 text-green-800 font-medium"
-                                  : "border-border"
-                              }`}
-                            >
-                              {opt}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="ml-10">
-                        <button
-                          onClick={() =>
-                            setSavedRevealed((prev) => {
-                              const next = new Set(prev);
-                              next.has(i) ? next.delete(i) : next.add(i);
-                              return next;
-                            })
-                          }
-                          className="text-sm text-primary hover:underline font-medium"
-                        >
-                          {savedRevealed.has(i) ? "Hide answer" : "Show answer"}
-                        </button>
-                        {savedRevealed.has(i) && (
-                          <div className="mt-3 space-y-2">
-                            {!q.options && (
-                              <div className="bg-green-50 border border-green-200 text-green-800 text-sm px-4 py-3 rounded-xl">
-                                <strong>Answer:</strong> {q.correctAnswer}
-                              </div>
-                            )}
-                            <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm px-4 py-3 rounded-xl">
-                              <strong>Explanation:</strong> {q.explanation}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
           </>
