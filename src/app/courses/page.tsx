@@ -24,7 +24,7 @@ interface Category {
 
 function CourseCardSkeleton() {
   return (
-    <div className="border border-border rounded-xl overflow-hidden">
+    <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-soft">
       <div className="h-44 skeleton" />
       <div className="p-5 space-y-3">
         <div className="h-4 w-20 skeleton" />
@@ -129,16 +129,18 @@ export default function CoursesPage() {
         Home
       </Link>
       <div className="animate-fade-in">
-        <h1 className="text-3xl font-bold">Browse Courses</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          Browse <span className="gradient-text">Courses</span>
+        </h1>
         <p className="text-muted-foreground mt-2 text-lg">
           Find the perfect course for you
         </p>
       </div>
 
       {/* Filters */}
-      <div className="mt-8 flex flex-col sm:flex-row gap-4 animate-fade-in-delay-1">
+      <div className="mt-8 flex flex-col sm:flex-row gap-3 animate-fade-in-delay-1">
         <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -146,13 +148,13 @@ export default function CoursesPage() {
             placeholder="Search courses..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition"
+            className="w-full pl-11 pr-4 py-3 bg-card border border-border rounded-2xl shadow-soft focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
           />
         </div>
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary bg-white transition min-w-[180px]"
+          className="px-4 py-3 border border-border rounded-2xl shadow-soft focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary bg-card transition min-w-[180px]"
         >
           <option value="">All Categories</option>
           {categories.map((cat) => (
@@ -188,23 +190,23 @@ export default function CoursesPage() {
             <Link
               key={course.id}
               href={`/courses/${course.slug}`}
-              className="border border-border rounded-xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group bg-white"
+              className="border border-border rounded-2xl overflow-hidden card-hover group bg-card shadow-soft animate-fade-in"
               style={{ animationDelay: `${i * 0.05}s` }}
             >
-              <div className="h-44 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center relative overflow-hidden">
+              <div className="h-44 bg-gradient-to-br from-primary/15 via-accent/10 to-accent-2/10 flex items-center justify-center relative overflow-hidden">
                 {course.thumbnail ? (
                   <img
                     src={course.thumbnail}
                     alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
-                  <span className="text-primary/30 text-5xl font-bold">
+                  <span className="gradient-text text-5xl font-bold opacity-60">
                     {course.title[0]}
                   </span>
                 )}
                 {course.price === 0 && (
-                  <span className="absolute top-3 left-3 bg-success text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                  <span className="absolute top-3 left-3 bg-success text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-soft">
                     Free
                   </span>
                 )}
@@ -250,10 +252,13 @@ export default function CoursesPage() {
                   {course.instructor.name}
                 </p>
                 <div className="mt-4 flex items-center justify-between pt-4 border-t border-border">
-                  <span className="font-bold text-xl">
+                  <span className={`font-bold text-xl ${course.price === 0 ? "text-success" : "gradient-text"}`}>
                     {course.price === 0 ? "Free" : `$${course.price.toFixed(2)}`}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
                     {course._count.enrollments} {course._count.enrollments === 1 ? "student" : "students"}
                   </span>
                 </div>

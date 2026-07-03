@@ -29,12 +29,15 @@ export default auth((req) => {
   const { pathname, search } = req.nextUrl;
   const user = req.auth?.user;
 
-  // Always-allowed framework / static asset paths
+  // Always-allowed framework / static asset paths.
+  // The extension check lets files served from /public (logo, images, fonts)
+  // load for anonymous visitors instead of bouncing them to /login.
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml"
+    pathname === "/sitemap.xml" ||
+    /\.(jpg|jpeg|png|gif|svg|webp|avif|ico|txt|xml|woff2?|ttf|otf|mp4|webm)$/i.test(pathname)
   ) {
     return NextResponse.next();
   }
@@ -44,10 +47,11 @@ export default auth((req) => {
   const isPublicApi = PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p));
 
   if (isPublicPage || isPublicApi) {
-    // If the user is already logged in, send them away from auth pages.
-    if (user && isPublicPage) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+    // Note: we deliberately do NOT redirect logged-in users away from auth
+    // pages. The server-side session callback invalidates sessions for
+    // deleted/unapproved accounts, but this Edge middleware only sees the JWT
+    // cookie — bouncing those users off /login would trap them until the
+    // token expires.
     return NextResponse.next();
   }
 

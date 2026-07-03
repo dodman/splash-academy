@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import crypto from "crypto";
+import { rateLimitByIp } from "@/lib/rate-limit";
+import { RateLimitError } from "@/lib/errors";
 
 export async function POST(req: NextRequest) {
+  try {
+    rateLimitByIp("forgot-password", req);
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
+    throw err;
+  }
+
   const { email } = await req.json();
 
-  if (!email) {
+  if (!email || typeof email !== "string") {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
 

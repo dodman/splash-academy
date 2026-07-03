@@ -67,20 +67,22 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white/80 backdrop-blur-lg border-b border-border sticky top-0 z-50">
+    <nav className="glass border-b border-border/70 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <img
-              src="/logo.jpg"
-              alt="Splash Academy"
-              width={40}
-              height={40}
-              className="rounded-full group-hover:shadow-lg group-hover:shadow-primary/25 transition-all duration-200"
-            />
-            <span className="text-xl font-bold text-foreground">
-              Splash Academy
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <span className="p-0.5 rounded-full bg-gradient-to-br from-primary via-accent to-accent-2 group-hover:shadow-glow transition-all duration-200">
+              <img
+                src="/logo.jpg"
+                alt="Splash Academy"
+                width={38}
+                height={38}
+                className="rounded-full block ring-2 ring-white"
+              />
+            </span>
+            <span className="text-xl font-bold tracking-tight text-foreground">
+              Splash <span className="gradient-text">Academy</span>
             </span>
           </Link>
 
@@ -285,7 +287,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/signup"
-                  className="bg-primary text-white px-5 py-2.5 rounded-xl hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/25 transition-all duration-200 text-sm font-semibold"
+                  className="bg-gradient-to-r from-primary to-accent text-white px-5 py-2.5 rounded-xl hover:shadow-glow hover:-translate-y-0.5 transition-all duration-200 text-sm font-semibold"
                 >
                   Sign up
                 </Link>
@@ -406,7 +408,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/signup"
-                  className="bg-primary text-white px-4 py-2.5 rounded-xl text-center text-sm font-semibold mt-1"
+                  className="bg-gradient-to-r from-primary to-accent text-white px-4 py-2.5 rounded-xl text-center text-sm font-semibold mt-1"
                   onClick={() => setMenuOpen(false)}
                 >
                   Sign up

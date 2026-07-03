@@ -76,19 +76,21 @@ export default function LoggedInHome() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Welcome back, {session?.user?.name}!</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          Welcome back, <span className="gradient-text">{session?.user?.name}</span>!
+        </h1>
       </div>
 
-      {/* Tab navigation */}
-      <div className="flex gap-1 border-b border-border overflow-x-auto pb-px">
+      {/* Tab navigation — pill style */}
+      <div className="flex gap-1.5 overflow-x-auto rounded-2xl bg-muted/80 p-1.5 border border-border/60">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap rounded-xl transition-all duration-200 ${
               activeTab === tab.key
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                ? "bg-card text-primary shadow-soft"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/60"
             }`}
           >
             {tab.icon}
@@ -113,10 +115,10 @@ export default function LoggedInHome() {
 
 function CourseCard({ course, actions }: { course: CourseData; actions?: ReactNode }) {
   return (
-    <div className="border border-border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 bg-white">
+    <div className="border border-border rounded-2xl overflow-hidden card-hover bg-card shadow-soft">
       <Link href={`/courses/${course.slug}`}>
-        <div className="h-32 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-          <span className="text-primary/30 text-3xl font-bold">{course.title[0]}</span>
+        <div className="h-32 bg-gradient-to-br from-primary/15 via-accent/10 to-accent-2/10 flex items-center justify-center">
+          <span className="gradient-text text-3xl font-bold opacity-60">{course.title[0]}</span>
         </div>
       </Link>
       <div className="p-4">
@@ -222,12 +224,12 @@ function SearchTab() {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           placeholder="Search courses, schools, or lessons..."
-          className="flex-1 px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          className="flex-1 px-4 py-3 bg-card border border-border rounded-2xl shadow-soft focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition"
         />
         <button
           onClick={handleSearch}
           disabled={searching || query.trim().length < 2}
-          className="px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary-dark transition disabled:opacity-50"
+          className="px-6 py-3 bg-gradient-to-r from-primary to-accent text-white rounded-2xl font-medium hover:shadow-glow transition-all duration-200 disabled:opacity-50 disabled:hover:shadow-none"
         >
           {searching ? "..." : "Search"}
         </button>
@@ -343,7 +345,7 @@ function LearningTab() {
               </div>
               <div className="w-full bg-border rounded-full h-2">
                 <div
-                  className={`h-2 rounded-full transition-all ${enrollment.progress === 100 ? "bg-success" : "bg-primary"}`}
+                  className={`h-2 rounded-full transition-all ${enrollment.progress === 100 ? "bg-success" : "bg-gradient-to-r from-primary to-accent"}`}
                   style={{ width: `${enrollment.progress}%` }}
                 />
               </div>
@@ -692,7 +694,7 @@ function EmptyState({ icon, title, description, actionLabel, actionHref }: {
       <p className="text-muted-foreground mt-1">{description}</p>
       <Link
         href={actionHref}
-        className="inline-block mt-6 bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-primary-dark transition"
+        className="inline-block mt-6 bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-xl font-semibold hover:shadow-glow hover:-translate-y-0.5 transition-all duration-200"
       >
         {actionLabel}
       </Link>

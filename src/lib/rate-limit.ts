@@ -34,4 +34,25 @@ export const LIMITS = {
   upload: { capacity: 3, refillPerSecond: 10 / 60 }, // ~10 req/min
   register: { capacity: 5, refillPerSecond: 5 / 60 },
   quiz: { capacity: 5, refillPerSecond: 10 / 60 },
+  // Sensitive unauthenticated endpoints — keep tight to slow brute force.
+  auth: { capacity: 8, refillPerSecond: 8 / 60 },    // ~8/min sustained, burst 8
 } as const;
+
+/** Best-effort client IP from proxy headers (falls back to a shared bucket). */
+export function clientIp(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0]!.trim();
+  return req.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
+/**
+ * Apply a rate limit keyed by a scope + the caller's IP. Throws RateLimitError
+ * when exceeded. Use in unauthenticated routes where there is no user id.
+ */
+export function rateLimitByIp(
+  scope: string,
+  req: Request,
+  opts: LimitOptions = LIMITS.auth
+): void {
+  rateLimit(`${scope}:${clientIp(req)}`, opts);
+}

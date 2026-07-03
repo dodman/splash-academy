@@ -85,8 +85,17 @@ interface ChatPanelProps {
 
 // ── Markdown renderer (simple, no external dep) ───────────────────────────────
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function renderMarkdown(text: string): string {
-  return text
+  // Escape first so raw HTML in message content can't execute (XSS) — the
+  // markdown transforms below insert only trusted, hard-coded tags.
+  return escapeHtml(text)
     // Code blocks
     .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre class="bg-white/5 rounded-lg p-3 text-sm overflow-x-auto my-2 font-mono"><code>$2</code></pre>')
     // Inline code

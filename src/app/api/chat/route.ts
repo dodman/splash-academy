@@ -14,19 +14,16 @@ import {
   persistAssistantMessage,
   generateSessionTitle,
   createSession,
+  getSession,
 } from "@/services/ai/tutorService";
+import { NotFoundError, ForbiddenError } from "@/lib/errors";
 import { isTutorMode } from "@/lib/modes";
+import { rateLimit, LIMITS } from "@/lib/rate-limit";
+import { RateLimitError } from "@/lib/errors";
 import type { TutorMode } from "@/generated/prisma/client";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
-
-const LIMITS = { chat: 60 };
-
-function rateLimit(_key: string, _limit: number) {
-  // Simplified — full rate limiting can be added later
-  return { ok: true };
-}
 
 const bodySchema = z.object({
   message: z.string().trim().min(1).max(16000),
@@ -48,9 +45,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const rl = rateLimit(`chat:${userId}`, LIMITS.chat);
-  if (!rl.ok) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  try {
+    rateLimit(`chat:${userId}`, LIMITS.chat);
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
+    }
+    throw err;
   }
 
   let body: z.infer<typeof bodySchema>;
@@ -72,6 +73,20 @@ export async function POST(req: Request) {
       mode: (courseId ? (tutorMode === "GENERAL" ? "LEARN" : tutorMode) : mode) as TutorMode,
     });
     sessionId = newSession.id;
+  } else {
+    // Verify the caller owns this session BEFORE writing to it — otherwise a
+    // client could inject messages into another user's chat (IDOR).
+    try {
+      await getSession(userId, sessionId);
+    } catch (err) {
+      if (err instanceof NotFoundError) {
+        return NextResponse.json({ error: "Session not found" }, { status: 404 });
+      }
+      if (err instanceof ForbiddenError) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      throw err;
+    }
   }
 
   // Persist user message

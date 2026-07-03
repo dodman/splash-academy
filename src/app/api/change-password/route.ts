@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "All fields are required" }, { status: 400 });
   }
 
-  if (newPassword.length < 6) {
-    return NextResponse.json({ error: "New password must be at least 6 characters" }, { status: 400 });
+  if (typeof newPassword !== "string" || newPassword.length < 8) {
+    return NextResponse.json({ error: "New password must be at least 8 characters" }, { status: 400 });
   }
 
   const user = await db.user.findUnique({
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
   }
 
-  const passwordHash = await bcrypt.hash(newPassword, 10);
+  const passwordHash = await bcrypt.hash(newPassword, 12);
   await db.user.update({
     where: { id: session.user.id },
     data: { passwordHash },

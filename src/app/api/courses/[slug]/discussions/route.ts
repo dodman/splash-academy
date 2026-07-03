@@ -55,10 +55,13 @@ export async function POST(
   if (!body.body?.trim()) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
+  if (body.body.length > 5000) {
+    return NextResponse.json({ error: "Message is too long" }, { status: 400 });
+  }
 
   const discussion = await db.discussion.create({
     data: {
-      body: body.body.trim(),
+      body: body.body.trim().slice(0, 5000),
       userId: session.user.id,
       courseId: course.id,
     },

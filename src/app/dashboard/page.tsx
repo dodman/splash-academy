@@ -50,14 +50,34 @@ export default async function StudentDashboard() {
     })
   );
 
+  const totalCompleted = enrollmentsWithProgress.filter((e) => e.progress === 100).length;
+  const inProgress = enrollmentsWithProgress.filter((e) => e.progress > 0 && e.progress < 100).length;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="animate-fade-in">
-        <h1 className="text-3xl font-bold">My Learning</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          My <span className="gradient-text">Learning</span>
+        </h1>
         <p className="text-muted-foreground mt-2 text-lg">
           Welcome back, {session.user.name}!
         </p>
       </div>
+
+      {enrollmentsWithProgress.length > 0 && (
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in-delay-1">
+          {[
+            { label: "Enrolled Courses", value: enrollmentsWithProgress.length },
+            { label: "In Progress", value: inProgress },
+            { label: "Completed", value: totalCompleted },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-2xl border border-border bg-card px-6 py-5 shadow-soft">
+              <p className="text-3xl font-bold gradient-text">{stat.value}</p>
+              <p className="text-sm text-muted-foreground mt-1 font-medium">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {enrollmentsWithProgress.length === 0 ? (
         <div className="mt-16 text-center animate-fade-in">
@@ -71,7 +91,7 @@ export default async function StudentDashboard() {
           </p>
           <Link
             href="/courses"
-            className="inline-block mt-6 bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-primary-dark hover:shadow-lg transition-all duration-200"
+            className="inline-block mt-6 bg-gradient-to-r from-primary to-accent text-white px-8 py-3 rounded-xl font-semibold hover:shadow-glow hover:-translate-y-0.5 transition-all duration-200"
           >
             Browse Courses
           </Link>
@@ -88,12 +108,20 @@ export default async function StudentDashboard() {
                     ? `/courses/${enrollment.course.slug}/learn/${firstLesson.id}`
                     : `/courses/${enrollment.course.slug}`
                 }
-                className="border border-border rounded-xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group bg-white"
+                className="border border-border rounded-2xl overflow-hidden card-hover group bg-card shadow-soft"
               >
-                <div className="h-36 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <span className="text-primary/30 text-4xl font-bold">
+                <div className="h-36 bg-gradient-to-br from-primary/15 via-accent/10 to-accent-2/10 flex items-center justify-center relative">
+                  <span className="gradient-text text-4xl font-bold opacity-60">
                     {enrollment.course.title[0]}
                   </span>
+                  {enrollment.progress === 100 && (
+                    <span className="absolute top-3 right-3 inline-flex items-center gap-1 bg-success text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-soft">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Done
+                    </span>
+                  )}
                 </div>
                 <div className="p-5">
                   <h3 className="font-semibold text-lg group-hover:text-primary transition line-clamp-2 leading-snug">
@@ -110,10 +138,12 @@ export default async function StudentDashboard() {
                         {enrollment.completedLessons}/{enrollment.totalLessons} lessons
                       </span>
                     </div>
-                    <div className="w-full bg-border rounded-full h-2.5">
+                    <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                       <div
                         className={`h-2.5 rounded-full transition-all duration-500 ${
-                          enrollment.progress === 100 ? "bg-success" : "bg-primary"
+                          enrollment.progress === 100
+                            ? "bg-success"
+                            : "bg-gradient-to-r from-primary to-accent"
                         }`}
                         style={{ width: `${enrollment.progress}%` }}
                       />

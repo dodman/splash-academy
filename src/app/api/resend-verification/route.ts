@@ -2,9 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { sendVerificationEmail } from "@/lib/email";
+import { rateLimitByIp } from "@/lib/rate-limit";
+import { RateLimitError } from "@/lib/errors";
 
 export async function POST(req: NextRequest) {
   try {
+    try {
+      rateLimitByIp("resend-verification", req);
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        return NextResponse.json({ error: err.message }, { status: 429 });
+      }
+      throw err;
+    }
+
     const { email } = await req.json();
 
     if (!email) {

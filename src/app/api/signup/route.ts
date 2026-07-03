@@ -1,24 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import { db } from "@/lib/db";
+import { rateLimitByIp } from "@/lib/rate-limit";
+import { RateLimitError } from "@/lib/errors";
+
+const signupSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(80),
+  email: z.string().trim().toLowerCase().email("Invalid email address").max(120),
+  password: z.string().min(8, "Password must be at least 8 characters").max(200),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password } = await req.json();
+    try {
+      rateLimitByIp("signup", req);
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        return NextResponse.json({ error: err.message }, { status: 429 });
+      }
+      throw err;
+    }
 
-    if (!name || !email || !password) {
+    const parsed = signupSchema.safeParse(await req.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Name, email, and password are required" },
+        { error: parsed.error.issues[0]?.message ?? "Invalid input" },
         { status: 400 }
       );
     }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
-        { status: 400 }
-      );
-    }
+    const { name, email, password } = parsed.data;
 
     const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -29,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Everyone signs up as a student — can apply for instructor/admin via profile
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
     const user = await db.user.create({
       data: {
         name,

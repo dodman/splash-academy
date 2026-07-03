@@ -18,11 +18,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (subject.length > 200 || message.length > 5000) {
+    return NextResponse.json(
+      { error: "Subject or message is too long" },
+      { status: 400 }
+    );
+  }
+
   const report = await db.report.create({
     data: {
       userId: session.user.id,
-      subject: subject.trim(),
-      message: message.trim(),
+      subject: subject.trim().slice(0, 200),
+      message: message.trim().slice(0, 5000),
     },
   });
 

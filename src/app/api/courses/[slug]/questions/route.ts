@@ -61,11 +61,14 @@ export async function POST(
   if (!title?.trim() || !questionBody?.trim()) {
     return NextResponse.json({ error: "Title and body are required" }, { status: 400 });
   }
+  if (title.length > 200 || questionBody.length > 5000) {
+    return NextResponse.json({ error: "Title or body is too long" }, { status: 400 });
+  }
 
   const question = await db.question.create({
     data: {
-      title: title.trim(),
-      body: questionBody.trim(),
+      title: title.trim().slice(0, 200),
+      body: questionBody.trim().slice(0, 5000),
       userId: session.user.id,
       courseId: course.id,
       lessonId: lessonId || null,

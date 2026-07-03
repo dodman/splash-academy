@@ -21,31 +21,48 @@ export default async function HomePage() {
       {isLoggedIn && <LoggedInHome />}
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary-dark to-[#4c1d95] text-white">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-primary-light rounded-full blur-3xl" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#4c1d95] via-primary-dark to-[#1e1b4b] text-white">
+        {/* Ambient glow blobs */}
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute -top-20 -left-16 w-96 h-96 bg-primary-light rounded-full blur-[120px] animate-float-slow" />
+          <div className="absolute top-1/3 -right-10 w-[28rem] h-[28rem] bg-accent-2/50 rounded-full blur-[130px] animate-float" />
+          <div className="absolute -bottom-24 left-1/3 w-96 h-96 bg-accent rounded-full blur-[120px]" />
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
-          <div className="max-w-2xl animate-fade-in">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight">
-              Learn new skills from expert instructors
+        {/* Grid overlay */}
+        <div className="absolute inset-0 bg-grid opacity-60" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-40">
+          <div className="max-w-3xl animate-fade-in">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium text-white/90 backdrop-blur">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-2 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-2" />
+              </span>
+              Now with Splash AI — your personal study tutor
+            </span>
+            <h1 className="mt-6 text-4xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight">
+              Master new skills with{" "}
+              <span className="gradient-text">expert-led</span> courses
             </h1>
-            <p className="mt-6 text-lg sm:text-xl text-white/80 leading-relaxed">
-              Splash Academy offers high-quality courses in web development,
-              design, business, and more. Start learning today.
+            <p className="mt-6 text-lg sm:text-xl text-white/75 leading-relaxed max-w-2xl">
+              High-quality courses in web development, design, and business —
+              plus an AI tutor, GPA tracker, and quizzes built to help you learn
+              faster and go further.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
               <Link
                 href="/courses"
-                className="bg-white text-primary px-8 py-3.5 rounded-xl font-semibold text-center hover:bg-gray-100 hover:shadow-lg transition-all duration-200"
+                className="group inline-flex items-center justify-center gap-2 bg-white text-primary-dark px-8 py-3.5 rounded-xl font-semibold shadow-glow hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5"
               >
                 Browse Courses
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
               </Link>
               {!isLoggedIn && (
                 <Link
                   href="/signup"
-                  className="border-2 border-white/30 text-white px-8 py-3.5 rounded-xl font-semibold text-center hover:bg-white/10 hover:border-white/50 transition-all duration-200"
+                  className="inline-flex items-center justify-center border border-white/25 bg-white/5 text-white px-8 py-3.5 rounded-xl font-semibold hover:bg-white/10 hover:border-white/40 transition-all duration-200 backdrop-blur"
                 >
                   Get Started Free
                 </Link>
@@ -53,24 +70,28 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
+
+        {/* Curved divider */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-background [clip-path:ellipse(75%_100%_at_50%_100%)]" />
       </section>
 
-      {/* Stats */}
-      <section className="border-b border-border bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
-            <div className="animate-fade-in-delay-1">
-              <p className="text-4xl font-bold text-primary">{courseCount}+</p>
-              <p className="text-muted-foreground mt-2 font-medium">Courses Available</p>
-            </div>
-            <div className="animate-fade-in-delay-2">
-              <p className="text-4xl font-bold text-primary">{categoryCount}</p>
-              <p className="text-muted-foreground mt-2 font-medium">Categories</p>
-            </div>
-            <div className="animate-fade-in-delay-3">
-              <p className="text-4xl font-bold text-primary">{studentCount}+</p>
-              <p className="text-muted-foreground mt-2 font-medium">Students Learning</p>
-            </div>
+      {/* Stats — floating glass cards overlapping the hero */}
+      <section className="relative -mt-24 z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {[
+              { value: `${courseCount}+`, label: "Courses Available", cls: "animate-fade-in-delay-1" },
+              { value: `${categoryCount}`, label: "Categories", cls: "animate-fade-in-delay-2" },
+              { value: `${studentCount}+`, label: "Students Learning", cls: "animate-fade-in-delay-3" },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className={`glass rounded-2xl px-8 py-7 text-center shadow-lift card-hover ${stat.cls}`}
+              >
+                <p className="text-4xl font-bold gradient-text">{stat.value}</p>
+                <p className="text-muted-foreground mt-2 font-medium">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -115,11 +136,17 @@ export default async function HomePage() {
               ),
             },
           ].map((item) => (
-            <div key={item.step} className="text-center group">
-              <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto group-hover:bg-primary group-hover:text-white transition-all duration-300">
+            <div
+              key={item.step}
+              className="group relative rounded-2xl border border-border bg-card p-8 shadow-soft card-hover"
+            >
+              <span className="absolute right-6 top-6 text-5xl font-bold text-primary/5 select-none">
+                {item.step}
+              </span>
+              <div className="w-14 h-14 bg-gradient-to-br from-primary to-accent text-white rounded-2xl flex items-center justify-center shadow-glow transition-transform duration-300 group-hover:scale-110">
                 {item.icon}
               </div>
-              <h3 className="mt-5 text-lg font-semibold">{item.title}</h3>
+              <h3 className="mt-6 text-lg font-semibold">{item.title}</h3>
               <p className="mt-2 text-muted-foreground leading-relaxed">{item.desc}</p>
             </div>
           ))}
@@ -127,22 +154,28 @@ export default async function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-gradient-to-r from-primary/5 to-primary-light/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <h2 className="text-3xl font-bold">
-            {isLoggedIn ? "Continue your learning journey" : "Ready to start learning?"}
-          </h2>
-          <p className="mt-3 text-muted-foreground text-lg max-w-md mx-auto">
-            {isLoggedIn
-              ? "Explore more courses and keep building your skills."
-              : "Join Splash Academy today and start your learning journey."}
-          </p>
-          <Link
-            href={isLoggedIn ? "/courses" : "/signup"}
-            className="inline-block mt-8 bg-primary text-white px-10 py-3.5 rounded-xl font-semibold hover:bg-primary-dark hover:shadow-lg transition-all duration-200"
-          >
-            {isLoggedIn ? "Browse Courses" : "Get Started Free"}
-          </Link>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary-dark to-[#1e1b4b] px-8 py-16 sm:py-20 text-center text-white shadow-glow">
+          <div className="absolute inset-0 opacity-40">
+            <div className="absolute -top-16 -right-10 w-80 h-80 bg-accent-2/40 rounded-full blur-[110px]" />
+            <div className="absolute -bottom-20 -left-10 w-80 h-80 bg-primary-light/50 rounded-full blur-[110px]" />
+          </div>
+          <div className="relative">
+            <h2 className="text-3xl sm:text-4xl font-bold">
+              {isLoggedIn ? "Continue your learning journey" : "Ready to start learning?"}
+            </h2>
+            <p className="mt-4 text-white/75 text-lg max-w-md mx-auto">
+              {isLoggedIn
+                ? "Explore more courses and keep building your skills."
+                : "Join Splash Academy today and start your learning journey."}
+            </p>
+            <Link
+              href={isLoggedIn ? "/courses" : "/signup"}
+              className="inline-flex items-center gap-2 mt-8 bg-white text-primary-dark px-10 py-3.5 rounded-xl font-semibold hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
+            >
+              {isLoggedIn ? "Browse Courses" : "Get Started Free"}
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -151,7 +184,7 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center shadow-glow">
                 <span className="text-white font-bold text-sm">S</span>
               </div>
               <span className="font-bold text-foreground">Splash Academy</span>

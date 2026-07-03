@@ -67,8 +67,17 @@ interface Session {
 
 // ── Markdown renderer ─────────────────────────────────────────────────────────
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function renderMarkdown(text: string): string {
-  return text
+  // Escape first so raw HTML in message content can't execute (XSS) — the
+  // markdown transforms below insert only trusted, hard-coded tags.
+  return escapeHtml(text)
     .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre class="bg-white/5 rounded-lg p-3 text-sm overflow-x-auto my-2 font-mono border border-white/10"><code>$2</code></pre>')
     .replace(/`([^`]+)`/g, '<code class="bg-white/10 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
